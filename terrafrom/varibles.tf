@@ -4,7 +4,7 @@ variable "project_name" {
 
     description = "Name of project"
     type =string
-    default = "gamboge_etl_pipeline"
+    default = "gamboge-etl-pipeline"
 }
 
 
