@@ -18,8 +18,13 @@ def test_s3_client_initialises_correctly():
 @mock_aws
 def test_write_json_uploads_data_to_s3():
     
-    s3 = boto3.client("s3")
-    s3.create_bucket(Bucket="test-bucket")
+    s3 = boto3.client("s3", region_name="eu-west-2")
+    s3.create_bucket(
+        Bucket="test-bucket",
+        CreateBucketConfiguration={"LocationConstraint": "eu-west-2"}
+    )
+
+    
 
     client = S3Client(bucket="test-bucket")
 
