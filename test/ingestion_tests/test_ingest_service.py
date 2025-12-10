@@ -1,4 +1,5 @@
 from src.ingestion.ingest_service import IngestionService
+import pytest
 
 def test_ingestion_service_initialises(mocker):
    
@@ -21,18 +22,13 @@ def test_ingest_table_preview_success(mocker):
     fake_s3_instance = mock_s3.return_value
 
     # Fake DB result
-    fake_db_instance.fetch_preview.return_value = [
-        {"id": 1, "name": "Aaron"},
-        {"id": 2, "name": "Yana"}
-    ]
-
-    # fake_db.fetch_preview.return_value = {
-    #     "columns": ["id", "name"],
-    #     "rows": [
-    #         {"id": 1, "name": "Aaron"},
-    #         {"id": 2, "name": "Yana"}
-    #     ]
-    # }
+    fake_db_instance.fetch_preview.return_value = {
+        "columns": ["id", "name"],
+        "rows": [
+            {"id": 1, "name": "Aaron"},
+            {"id": 2, "name": "Yana"}
+        ]
+    }
 
 
     # Fake S3 key
@@ -43,16 +39,11 @@ def test_ingest_table_preview_success(mocker):
     
     result = service.ingest_table_preview("staff", limit=2)
 
-    assert result == {
-        "table": "staff",
-        "rows": 2,
-        "s3_key": "staff/raw_2025-01-01T12-00-00.json"
-    }
 
-    # assert result["table"] == "staff"
-    # assert result["row_count"] == 2
-    # assert result["s3_key"] == "staff/raw_2025-01-01T12-00-00.json"
-    # assert "timestamp" in result  # timestamp exists
+    assert result["table"] == "staff"
+    assert result["row_count"] == 2
+    assert result["s3_key"] == "staff/raw_2025-01-01T12-00-00.json"
+    assert "timestamp" in result  # timestamp exists
 
     fake_db_instance.fetch_preview.assert_called_once_with("staff", 2)
     fake_s3_instance.write_json.assert_called_once()
@@ -68,11 +59,11 @@ def test_ingest_table_preview_handles_error(mocker):
 
     service = IngestionService("bucket")
 
-    
-    result = service.ingest_table_preview("staff")
+    with pytest.raises(Exception) as exc_info:
+        service.ingest_table_preview("staff")
 
 
-    assert result is None
+    assert "DB failed!" in str(exc_info.value)
 
 
 
