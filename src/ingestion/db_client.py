@@ -6,6 +6,8 @@ import logging
 import boto3
 import json
 import sys
+
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 print(f"DEBUG: Python path: {sys.path}")
@@ -89,13 +91,36 @@ class DatabaseClient():
             "columns": list(rows[0].keys()),
             "rows": rows
         }
+    
+
+
+    def list_tables(self):
+        """
+        Returns a list of all user tables in the public schema.
+        """
+        sql = """
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+            ORDER BY table_name;
+        """
+
+        try:
+            rows = self.run(sql)
+            table_names = [row["table_name"] for row in rows]
+            logger.info(f"Found {len(table_names)} tables: {table_names}")
+            return table_names
+
+        except Exception:
+            logger.exception("Failed to list tables from information_schema")
+            raise
+
     def close(self):
         try:
             self.conn.close()
             logger.info("Database connection closed.")
         except:
             logger.warning("Failed to close database connection cleanly.")
-
 
 
 
