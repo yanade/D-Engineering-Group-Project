@@ -11,9 +11,9 @@ def lambda_handler(event, context):
         raise ValueError("Environment variable LANDING_BUCKET_NAME is not set.")
     service = IngestionService(bucket=bucket)
     try:
-        table_name = event.get("table", "staff")
-        logger.info(f"Starting ingestion for table: {table_name}")
-        result = service.ingest_table_preview(table_name)
+        # table_name = event.get("table", "staff")
+        logger.info(f"Starting ingestion for tables in bucket: {bucket}")
+        result = service.ingest_all_tables()
         logger.info(f"Ingestion complete: {result}")
         return {
             "statusCode": 200,
