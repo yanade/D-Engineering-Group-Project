@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from pg8000.native import Connection
+from datetime import datetime
 import pg8000
 import os
 import logging
@@ -76,6 +77,7 @@ class DatabaseClient():
         except Exception as e:
             logger.exception(f"Error executing SQL: {sql}")
             raise
+    
     def fetch_preview(self, table_name: str, limit: int = 10):
         logger.info(f"Fetching preview from table '{table_name}' (limit={limit})")
         if not table_name.isidentifier():
@@ -115,6 +117,121 @@ class DatabaseClient():
             logger.exception("Failed to list tables from information_schema")
             raise
 
+
+    def get_columns(self, table_name: str):
+        """
+        Returns a list of column names for the specified table.
+        """
+        if not table_name.isidentifier():
+            raise ValueError(f"Unsafe table name: {table_name}")
+
+        sql = """
+            SELECT column_name, data_type
+            FROM information_schema.columns
+            WHERE table_name = :table_name
+            ORDER BY ordinal_position;
+        """
+
+        try:
+            
+            rows = self.run(sql, {"table_name": table_name})
+            # expected format output [{"column_name": "staff_id", "data_type": "integer"}]
+
+            logger.info(f"Columns for table '{table_name}': {rows}")
+            return rows
+
+        except Exception:
+            logger.exception(f"Failed to get columns for table '{table_name}'")
+            raise
+
+    def infer_timestamp_column(self, table_name: str):
+        """
+        Detects the most appropriate timestamp column for incremental ingestion.
+        Returns the column name or None if not found.
+        """
+        try:
+            columns = self.get_columns(table_name)
+
+            timestamp_candidates = [
+                col["column_name"] for col in columns
+                if "timestamp" in col["data_type"].lower()
+            ]
+            date_candidates = [
+                col["column_name"]
+                for col in columns
+                if "date" in col["data_type"].lower()
+            ]
+            preferred_names = ["last_updated", "updated_at", "created_at", "modified_at"]
+
+            for pref in preferred_names:
+                for candidate in timestamp_candidates:
+                    if candidate.lower() == pref:
+                        logger.info(f"[{table_name}] Using preferred timestamp column: {candidate}")
+                        return candidate
+
+
+            if timestamp_candidates:
+                logger.info(f"[{table_name}] Using first timestamp column: {timestamp_candidates[0]}")
+                return timestamp_candidates[0]
+
+            if date_candidates:
+                logger.warning(
+                    f"[{table_name}] No timestamp columns found, using DATE column '{date_candidates[0]}' "
+                    f"(incremental ingestion may be less accurate)"
+                )
+                return date_candidates[0]
+            
+            logger.warning(f"[{table_name}] No timestamp/date columns found.")
+            return None
+
+        except Exception:
+            logger.exception(f"Failed to infer timestamp column for table '{table_name}'")
+            raise
+
+    
+    def fetch_changes(self, table_name: str, since: datetime | None = None):
+
+        """
+       Fetches new or updated rows from the table since the given checkpoint timestamp.
+        """
+
+        logger.info(f"Fetching incremental data from '{table_name}' since '{since}'")
+
+        if not table_name.isidentifier():
+            raise ValueError(f"Unsafe table name: {table_name}")
+        
+        timestamp_col = self.infer_timestamp_column(table_name)
+        
+        if timestamp_col is None:
+            logger.warning(
+                f"[{table_name}] No timestamp column found → FULL table ingestion."
+            )
+            return self.run(f"SELECT * FROM {table_name};")
+        
+        if since is None:
+            logger.info(
+                f"[{table_name}] No checkpoint found → FULL table ingestion."
+            )
+            return self.run(f"SELECT * FROM {table_name};")
+        
+
+        sql = f"""
+            SELECT *
+            FROM {table_name}
+            WHERE {timestamp_col} > :since
+            ORDER BY {timestamp_col} ASC;
+        """
+
+        try:
+            rows = self.run(sql, {"since": since})
+            logger.info(f"Fetched {len(rows)} incremental rows from '{table_name}'")
+            return rows
+
+        except Exception:
+            logger.exception(f"Failed to fetch incremental data from table '{table_name}'")
+            raise
+    
+
     def close(self):
         try:
             self.conn.close()
@@ -123,7 +240,7 @@ class DatabaseClient():
             logger.warning("Failed to close database connection cleanly.")
 
 
-
+    
 
 
 
