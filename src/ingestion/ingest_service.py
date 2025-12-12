@@ -1,5 +1,5 @@
-from db_client import DatabaseClient
-from s3_client import S3Client
+from src.ingestion.db_client import DatabaseClient
+from src.ingestion.s3_client import S3Client
 from datetime import datetime, timezone
 import logging
 
@@ -63,11 +63,66 @@ class IngestionService:
             logger.exception(f"Ingestion preview FAILED for table '{table_name}'. Error: {e}")
             raise
 
+    def ingest_table_changes(self, table_name: str):
+        logger.info(f"Starting incremental ingestion for table '{table_name}'")
+
+        try:
+            # Get last checkpoint from S3
+            last_checkpoint = self.s3.get_checkpoint(table_name)
+
+            # Fetch new/updated rows from DB since last checkpoint
+            changes = self.db.fetch_changes(table_name, since=last_checkpoint)
+         
+
+            logger.info(f"Fetched {len(changes)} changed rows from table '{table_name}' since '{last_checkpoint}'")
+            if not changes:
+                logger.info(f"No new changes found for table '{table_name}'. Skipping S3 upload.")
+                return {
+                    "table": table_name,
+                    "row_count": 0,
+                    "s3_key": None,
+                    "status": "no_changes"}
+            
+
+            s3_key = self.s3.write_json(table_name=table_name, data=changes)
+
+            logger.info(
+                f"Incremental ingestion complete for table '{table_name}'. "
+                f"Uploaded to S3 key: {s3_key}"
+            )
+            
+            timestamp_col = self.db.infer_timestamp_column(table_name)
+            if timestamp_col is not None:
+                raw_checkpoint = max(row[timestamp_col] for row in changes)
+                if isinstance(raw_checkpoint, str):
+                    new_checkpoint = datetime.fromisoformat(raw_checkpoint)
+                else:
+                    new_checkpoint = raw_checkpoint
+                self.s3.write_checkpoint(table_name, timestamp=new_checkpoint)
+                logger.info(
+                    f"Updated checkpoint for table '{table_name}' to '{new_checkpoint}'")
+                checkpoint_str = new_checkpoint.isoformat()
+            else:
+                checkpoint_str = None
+                logger.info(f"[{table_name}] No timestamp column found; checkpoint not updated.")
+            
+            # RETURN METADATA ONLY (no heavy payload)
+            return {
+                "table": table_name,
+                "row_count": len(changes),
+                "s3_key": s3_key,
+                "checkpoint": checkpoint_str
+            }
+
+        except Exception as e:
+            logger.exception(f"Incremental ingestion FAILED for table '{table_name}'. Error: {e}")
+            raise
+
 
 
     def ingest_all_tables(self, tables: list[str] | None = None, limit: int = 50):
         """
-        Ingests preview rows from all tables in the database.
+        Ingests new rows from all tables in the database.
         """
         tables_to_process = tables or self.db.list_tables()
         logger.info(f"Starting ingestion for {len(tables_to_process)} tables")
@@ -81,7 +136,8 @@ class IngestionService:
                 continue
 
             try:
-                result = self.ingest_table_preview(table, limit)
+                #CHANGED LINE 142
+                result = self.ingest_table_changes(table)
                 results[table] = {"status": "success", **result}
 
             except Exception as e:
@@ -95,6 +151,4 @@ class IngestionService:
         logger.info("Closing IngestionService resources...")
         self.db.close()
 
-    def close(self):
-        logger.info("Closing IngestionService resources...")
-        self.db.close()
+    

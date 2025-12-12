@@ -38,3 +38,52 @@ class S3Client:
         except Exception as e:
             logger.exception(f"Failed to upload JSON to S3 (bucket={self.bucket}, key={key})")
             raise
+
+    def get_checkpoint(self, table_name: str):
+        """
+        Returns last_ingested datetime for a table, or None if checkpoint does not exist.
+        """
+        key = f"checkpoints/{table_name}_checkpoint.json"
+        try:
+            response = self.s3.get_object(Bucket=self.bucket, Key=key)
+            body = response["Body"].read().decode("utf-8")
+            data = json.loads(body)
+            checkpoint = datetime.fromisoformat(data["last_ingested"])
+            logger.info(f"Retrieved checkpoint for table '{table_name}': {checkpoint}")
+            return checkpoint
+        except self.s3.exceptions.NoSuchKey:
+            logger.info(f"No checkpoint found for table '{table_name}'")
+            return None
+        except Exception as e:
+            logger.exception(f"Failed to retrieve checkpoint for table '{table_name}'")
+            raise
+
+    def write_checkpoint(self, table_name: str, timestamp: datetime):
+        """
+        Writes the last_ingested datetime for a table checkpoint.
+        """
+
+        if not isinstance(timestamp, datetime):
+            raise ValueError("Checkpoint timestamp must be a datetime object")
+
+        key = f"checkpoints/{table_name}_checkpoint.json"
+        data = {
+            "table": table_name,
+            "last_ingested": timestamp.astimezone(timezone.utc).isoformat()
+        }
+        logger.info(
+            f"Saving checkpoint for table '{table_name}': {data['last_ingested']}"
+        )
+
+        try:
+            self.s3.put_object(
+                Bucket=self.bucket,
+                Key=key,
+                Body=json.dumps(data),
+                ContentType="application/json"
+            )
+            logger.info(f"Wrote checkpoint for table '{table_name}': {data['last_ingested']}")
+        
+        except Exception as e:
+            logger.exception(f"Failed to write checkpoint for table '{table_name}'")
+            raise
