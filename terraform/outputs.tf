@@ -30,7 +30,7 @@ output "cloudwatch_log_group" {
 
 output "secrets_manager_secret" {
   description = "Name of the Secrets Manager secret"
-  value       = aws_secretsmanager_secret.totesys_creds.name
+  value       = data.aws_secretsmanager_secret.totesys_creds.name
   sensitive   = true
 }
 

@@ -6,3 +6,9 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.log
+*/lambda_layer
+*/dist
+*/scripts
+lambda_layer/
+dist/
+scripts/

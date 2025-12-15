@@ -3,7 +3,7 @@
 data "archive_file" "ingestion_lambda" {
   type        = "zip"
   source_dir  = "${path.module}/../src/ingestion"
-  output_path = "${path.module}/../dist/ingestion_lambda.zip"
+  output_path = "${path.module}/../lambda_handler.zip"
   excludes = [
     "__pycache__",
     "*.pyc",
@@ -28,8 +28,8 @@ resource "aws_lambda_function" "ingestion" {
 
   environment {
     variables = {
-      LANDING_BUCKET    = aws_s3_bucket.landing_zone.bucket
-      TOTESYS_DB_SECRET = aws_secretsmanager_secret.totesys_creds.name
+      LANDING_BUCKET_NAME    = aws_s3_bucket.landing_zone.bucket
+      DB_SECRET_ARN = data.aws_secretsmanager_secret.totesys_creds.name
       ENVIRONMENT       = var.environment
       LOG_LEVEL         = "INFO"
     }

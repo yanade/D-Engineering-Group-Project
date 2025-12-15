@@ -58,7 +58,7 @@ resource "aws_iam_role_policy" "lambda_secrets_access" {
     Statement = [{
       Effect = "Allow"
       Action = ["secretsmanager:GetSecretValue"]
-      Resource = aws_secretsmanager_secret.totesys_creds.arn 
+      Resource = data.aws_secretsmanager_secret.totesys_creds.arn 
     }]
   })
 }

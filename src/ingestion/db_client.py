@@ -42,12 +42,12 @@ class DatabaseClient():
             secret = json.loads(response['SecretString'])
             self.host = secret.get("host")
             self.database = secret.get("database")
-            self.user = secret.get("user")
+            self.user = secret.get("username")
             self.password = secret.get("password")
             self.port = int(secret.get("port", 5432))
             logger.info("Using Secrets Manager for DB connection")
         logger.info(
-            f"Loaded DB env variables: host={self.host}, database={self.database}, user={self.user}, port={self.port}"
+            f"Loaded DB env variables"
         )
         if not all([self.host, self.database, self.user, self.password, self.port]):
             logger.error("Missing required DB environment variables!")
