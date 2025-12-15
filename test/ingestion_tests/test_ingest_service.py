@@ -1,5 +1,9 @@
 from src.ingestion.ingest_service import IngestionService
+import os
+from datetime import datetime, timezone
 import pytest
+
+
 
 def test_ingestion_service_initialises(mocker):
    
@@ -48,6 +52,8 @@ def test_ingest_table_preview_success(mocker):
     ]
     assert raw_payload["limit"] == 2
     assert "timestamp" in raw_payload
+
+
 def test_ingest_table_preview_handles_error(mocker):
     mock_db = mocker.patch("src.ingestion.ingest_service.DatabaseClient")
     mocker.patch("src.ingestion.ingest_service.S3Client")
@@ -57,6 +63,8 @@ def test_ingest_table_preview_handles_error(mocker):
     with pytest.raises(Exception) as exc_info:
         service.ingest_table_preview("staff")
     assert "DB failed!" in str(exc_info.value)
+
+
 def test_close_calls_db_close(mocker):
     mock_db = mocker.patch("src.ingestion.ingest_service.DatabaseClient")
     mocker.patch("src.ingestion.ingest_service.S3Client")
@@ -66,9 +74,6 @@ def test_close_calls_db_close(mocker):
     fake_db_instance.close.assert_called_once()
 
 
-import pytest
-from datetime import datetime, timezone
-from src.ingestion.ingest_service import IngestionService
 def test_ingest_table_changes_success_updates_checkpoint(mocker):
     mock_db = mocker.patch("src.ingestion.ingest_service.DatabaseClient")
     mock_s3 = mocker.patch("src.ingestion.ingest_service.S3Client")
@@ -97,6 +102,9 @@ def test_ingest_table_changes_success_updates_checkpoint(mocker):
     )
     fake_db_instance.infer_timestamp_column.assert_called_once_with("staff")
     fake_s3_instance.write_checkpoint.assert_called_once_with("staff", timestamp=ts2)
+
+
+
 def test_ingest_table_changes_no_changes_skips_upload(mocker):
     mock_db = mocker.patch("src.ingestion.ingest_service.DatabaseClient")
     mock_s3 = mocker.patch("src.ingestion.ingest_service.S3Client")
@@ -115,6 +123,9 @@ def test_ingest_table_changes_no_changes_skips_upload(mocker):
     fake_db_instance.fetch_changes.assert_called_once_with("staff", since="2025-01-01T00:00:00+00:00")
     fake_s3_instance.write_json.assert_not_called()
     fake_s3_instance.write_checkpoint.assert_not_called()
+
+
+
 def test_ingest_table_changes_no_timestamp_column_checkpoint_none(mocker):
     mock_db = mocker.patch("src.ingestion.ingest_service.DatabaseClient")
     mock_s3 = mocker.patch("src.ingestion.ingest_service.S3Client")
@@ -131,6 +142,8 @@ def test_ingest_table_changes_no_timestamp_column_checkpoint_none(mocker):
     assert result["s3_key"] == "staff/changes.json"
     assert result["checkpoint"] is None
     fake_s3_instance.write_checkpoint.assert_not_called()
+
+
 def test_ingest_table_changes_handles_error(mocker):
     mock_db = mocker.patch("src.ingestion.ingest_service.DatabaseClient")
     mocker.patch("src.ingestion.ingest_service.S3Client")

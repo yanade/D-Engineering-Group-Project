@@ -1,4 +1,5 @@
 import json
+import os
 from src.ingestion.lambda_handler import lambda_handler
 from src.ingestion.ingest_service import IngestionService
 
@@ -8,22 +9,29 @@ def test_lambda_handler(mocker):
 
     mock_service =  mocker.patch("src.ingestion.lambda_handler.IngestionService")
 
-    fake_instance = mock_service.return_value
-    fake_instance.ingest_table_preview.return_value = {
-
-        "table": "staff",
-        "rows": 2,
-        "s3_key": "staff//raw.json"
+    fake_service = mock_service.return_value
+    fake_service.ingest_all_tables.return_value = {
+        "tables_processed": 1,
+        "status": "ok",
     }
+    resp = lambda_handler({}, None)
+    body = json.loads(resp["body"])
+    assert resp["statusCode"] == 200
+    assert body["result"]["status"] == "ok"
+    fake_service.ingest_all_tables.assert_called_once()
+    fake_service.close.assert_called_once()
 
-    event = {"table": "staff"}
 
-    response = lambda_handler(event, None)
-    body = json.loads(response["body"])
+    # result = mock_service.return_value.ingest_all_tables()
+       
+    
 
-    assert response["statusCode"] == 200
-    assert body["result"]["table"] == "staff"
-    assert fake_instance.ingest_table_preview.called
+    # response = lambda_handler()
+    # body = json.loads(response["body"])
+
+    # assert response["statusCode"] == 200
+    
+    
 
 
 

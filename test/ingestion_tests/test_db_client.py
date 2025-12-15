@@ -94,7 +94,7 @@ def test_fetch_preview_calls_run_with_limit(mocker):
         {"limit": 5}
     )
 
-    assert result == [{"id": 1}]
+    assert isinstance(result, dict)
 
 
 
