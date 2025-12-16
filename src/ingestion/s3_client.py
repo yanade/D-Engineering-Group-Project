@@ -22,22 +22,16 @@ class S3Client:
     def write_json(self, table_name: str, data: list[dict]):
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
         key = f"{table_name}/raw_{timestamp}.json"
-        logger.info(
-            f"Uploading JSON to S3 → bucket={self.bucket}, key={key}, rows={len(data)}"
-        )
+        logger.info(f"Uploading JSON to S3 → bucket={self.bucket}, key={key}, rows={len(data)}")
 
         try:
-            self.s3.put_object(
-                Bucket=self.bucket, Key=key, Body=json.dumps(data, default=str)
-            )
+            self.s3.put_object(Bucket=self.bucket, Key=key, Body=json.dumps(data, default=str))
 
             logger.info(f"S3 upload successful → s3://{self.bucket}/{key}")
             return key
 
         except Exception as e:
-            logger.exception(
-                f"Failed to upload JSON to S3 (bucket={self.bucket}, key={key}, {e})"
-            )
+            logger.exception(f"Failed to upload JSON to S3 (bucket={self.bucket}, key={key}, {e})")
             raise
 
     def get_checkpoint(self, table_name: str):
@@ -72,9 +66,7 @@ class S3Client:
             "table": table_name,
             "last_ingested": timestamp.astimezone(timezone.utc).isoformat(),
         }
-        logger.info(
-            f"Saving checkpoint for table '{table_name}': {data['last_ingested']}"
-        )
+        logger.info(f"Saving checkpoint for table '{table_name}': {data['last_ingested']}")
 
         try:
             self.s3.put_object(
@@ -83,9 +75,7 @@ class S3Client:
                 Body=json.dumps(data),
                 ContentType="application/json",
             )
-            logger.info(
-                f"Wrote checkpoint for table '{table_name}': {data['last_ingested']}"
-            )
+            logger.info(f"Wrote checkpoint for table '{table_name}': {data['last_ingested']}")
         except Exception as e:
             logger.exception(f"Failed to write checkpoint for table '{table_name}', {e}")
             raise

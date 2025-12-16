@@ -12,3 +12,5 @@ __pycache__/
 lambda_layer/
 dist/
 scripts/
+.zip
+*.zip

@@ -39,9 +39,7 @@ class DatabaseClient:
             # Lambda environment - use Secrets Manager
             secret_arn = os.getenv("DB_SECRET_ARN")
             if not secret_arn:
-                raise ValueError(
-                    "DB_SECRET_ARN environment variable is required in Lambda"
-                )
+                raise ValueError("DB_SECRET_ARN environment variable is required in Lambda")
             client = boto3.client("secretsmanager")
             response = client.get_secret_value(SecretId=secret_arn)
             secret = json.loads(response["SecretString"])
@@ -148,16 +146,8 @@ class DatabaseClient:
         try:
             columns = self.get_columns(table_name)
 
-            timestamp_candidates = [
-                col["column_name"]
-                for col in columns
-                if "timestamp" in col["data_type"].lower()
-            ]
-            date_candidates = [
-                col["column_name"]
-                for col in columns
-                if "date" in col["data_type"].lower()
-            ]
+            timestamp_candidates = [col["column_name"] for col in columns if "timestamp" in col["data_type"].lower()]
+            date_candidates = [col["column_name"] for col in columns if "date" in col["data_type"].lower()]
             preferred_names = [
                 "last_updated",
                 "updated_at",
@@ -168,15 +158,11 @@ class DatabaseClient:
             for pref in preferred_names:
                 for candidate in timestamp_candidates:
                     if candidate.lower() == pref:
-                        logger.info(
-                            f"[{table_name}] Using preferred timestamp column: {candidate}"
-                        )
+                        logger.info(f"[{table_name}] Using preferred timestamp column: {candidate}")
                         return candidate
 
             if timestamp_candidates:
-                logger.info(
-                    f"[{table_name}] Using first timestamp column: {timestamp_candidates[0]}"
-                )
+                logger.info(f"[{table_name}] Using first timestamp column: {timestamp_candidates[0]}")
                 return timestamp_candidates[0]
 
             if date_candidates:
@@ -189,9 +175,7 @@ class DatabaseClient:
             logger.warning(f"[{table_name}] No timestamp/date columns found.")
             return None
         except Exception as e:
-            logger.exception(
-                f"Failed to infer timestamp column for table '{table_name}','{e}'"
-            )
+            logger.exception(f"Failed to infer timestamp column for table '{table_name}','{e}'")
             raise
 
     def fetch_changes(self, table_name: str, since: datetime | None = None):
@@ -207,9 +191,7 @@ class DatabaseClient:
         timestamp_col = self.infer_timestamp_column(table_name)
 
         if timestamp_col is None:
-            logger.warning(
-                f"[{table_name}] No timestamp column found → FULL table ingestion."
-            )
+            logger.warning(f"[{table_name}] No timestamp column found → FULL table ingestion.")
             return self.run(f"SELECT * FROM {table_name};")
 
         if since is None:
@@ -229,9 +211,7 @@ class DatabaseClient:
             return rows
 
         except Exception as e:
-            logger.exception(
-                f"Failed to fetch incremental data from table '{table_name}','{e}'"
-            )
+            logger.exception(f"Failed to fetch incremental data from table '{table_name}','{e}'")
             raise
 
     def close(self):
