@@ -54,7 +54,6 @@ jobs:
         - name: Lint with flake8
           run: flake8 src/ --max-line-length=120
 
-
         - name: Security - bandit
           run: |
             # Run but don't fail the pipeline

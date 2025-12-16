@@ -86,7 +86,6 @@ class S3Client:
             logger.info(
                 f"Wrote checkpoint for table '{table_name}': {data['last_ingested']}"
             )
-
         except Exception as e:
             logger.exception(f"Failed to write checkpoint for table '{table_name}', {e}")
             raise

@@ -7,7 +7,6 @@ from ingest_service import IngestionService
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-
 def lambda_handler(event, context):
     logger.info(f"Lambda triggered with event: {event}")
     bucket = os.getenv("LANDING_BUCKET_NAME")

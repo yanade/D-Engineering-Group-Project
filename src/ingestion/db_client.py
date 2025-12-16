@@ -188,7 +188,6 @@ class DatabaseClient:
 
             logger.warning(f"[{table_name}] No timestamp/date columns found.")
             return None
-
         except Exception as e:
             logger.exception(
                 f"Failed to infer timestamp column for table '{table_name}','{e}'"

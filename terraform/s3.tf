@@ -32,7 +32,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "landing_zone" {
     }
   }
 }
-
 # Block public access
 resource "aws_s3_bucket_public_access_block" "landing_zone" {
   bucket = aws_s3_bucket.landing_zone.id
