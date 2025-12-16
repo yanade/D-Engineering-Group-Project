@@ -4,9 +4,8 @@ from datetime import datetime, timezone
 import pytest
 
 
-
 def test_ingestion_service_initialises(mocker):
-   
+
     mock_db = mocker.patch("src.ingestion.ingest_service.DatabaseClient")
     mock_s3 = mocker.patch("src.ingestion.ingest_service.S3Client")
 
@@ -104,7 +103,6 @@ def test_ingest_table_changes_success_updates_checkpoint(mocker):
     fake_s3_instance.write_checkpoint.assert_called_once_with("staff", timestamp=ts2)
 
 
-
 def test_ingest_table_changes_no_changes_skips_upload(mocker):
     mock_db = mocker.patch("src.ingestion.ingest_service.DatabaseClient")
     mock_s3 = mocker.patch("src.ingestion.ingest_service.S3Client")
@@ -123,7 +121,6 @@ def test_ingest_table_changes_no_changes_skips_upload(mocker):
     fake_db_instance.fetch_changes.assert_called_once_with("staff", since="2025-01-01T00:00:00+00:00")
     fake_s3_instance.write_json.assert_not_called()
     fake_s3_instance.write_checkpoint.assert_not_called()
-
 
 
 def test_ingest_table_changes_no_timestamp_column_checkpoint_none(mocker):

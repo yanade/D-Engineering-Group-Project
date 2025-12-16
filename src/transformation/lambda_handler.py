@@ -30,30 +30,25 @@ def lambda_handler(event, context):
         # S3 keys are URL-encoded
         source_key = urllib.parse.unquote_plus(raw_key)
 
-        logger.info(
-            "Processing object from bucket=%s, key=%s",
-            source_bucket,
-            source_key
-        )
+        logger.info("Processing object from bucket=%s, key=%s", source_bucket, source_key)
 
         # 2. Read environment variables
         processed_bucket = os.environ["PROCESSED_BUCKET_NAME"]
 
         # 3. Placeholder for transform logic
         # (we will implement this in the next step)
-        logger.info(
-            "Transform target bucket=%s (logic not implemented yet)",
-            processed_bucket
-        )
+        logger.info("Transform target bucket=%s (logic not implemented yet)", processed_bucket)
 
         return {
             "statusCode": 200,
-            "body": json.dumps({
-                "message": "Transform Lambda executed successfully",
-                "source_bucket": source_bucket,
-                "source_key": source_key,
-                "processed_bucket": processed_bucket
-            })
+            "body": json.dumps(
+                {
+                    "message": "Transform Lambda executed successfully",
+                    "source_bucket": source_bucket,
+                    "source_key": source_key,
+                    "processed_bucket": processed_bucket,
+                }
+            ),
         }
 
     except Exception as exc:

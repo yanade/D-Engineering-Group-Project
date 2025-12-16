@@ -7,7 +7,6 @@ import json
 import pytest
 
 
-
 def test_s3_client_initialises_correctly():
     client = S3Client(bucket="test-bucket")
 
@@ -15,17 +14,11 @@ def test_s3_client_initialises_correctly():
     assert client.s3 is not None
 
 
-
 @mock_aws
 def test_write_json_uploads_data_to_s3():
-    
-    s3 = boto3.client("s3", region_name="eu-west-2")
-    s3.create_bucket(
-        Bucket="test-bucket",
-        CreateBucketConfiguration={"LocationConstraint": "eu-west-2"}
-    )
 
-    
+    s3 = boto3.client("s3", region_name="eu-west-2")
+    s3.create_bucket(Bucket="test-bucket", CreateBucketConfiguration={"LocationConstraint": "eu-west-2"})
 
     client = S3Client(bucket="test-bucket")
 
@@ -42,7 +35,6 @@ def test_write_json_uploads_data_to_s3():
 def test_write_json_raises_error_when_s3_fails(mocker):
     client = S3Client(bucket="test-bucket")
 
-
     mocker.patch.object(client.s3, "put_object", side_effect=Exception("Upload failed"))
 
     with pytest.raises(Exception) as exc:
@@ -51,23 +43,19 @@ def test_write_json_raises_error_when_s3_fails(mocker):
     assert "Upload failed" in str(exc.value)
 
 
-
 def test_write_json_key_format(mocker):
     client = S3Client(bucket="test-bucket")
 
     class FakeDatetime:
         @staticmethod
         def now(tz=None):
-            
+
             return datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
-    
     mocker.patch("src.ingestion.s3_client.datetime", FakeDatetime)
 
-    
     mocker.patch.object(client.s3, "put_object")
 
     key = client.write_json("staff", [])
-
 
     assert key.startswith("staff/raw_2025-01-01T12-00-00")

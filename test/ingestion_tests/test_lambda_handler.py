@@ -3,11 +3,12 @@ import os
 from src.ingestion.lambda_handler import lambda_handler
 from src.ingestion.ingest_service import IngestionService
 
+
 def test_lambda_handler(mocker):
 
     mocker.patch("os.getenv", return_value="test_bucket")
 
-    mock_service =  mocker.patch("src.ingestion.lambda_handler.IngestionService")
+    mock_service = mocker.patch("src.ingestion.lambda_handler.IngestionService")
 
     fake_service = mock_service.return_value
     fake_service.ingest_all_tables.return_value = {
@@ -21,17 +22,9 @@ def test_lambda_handler(mocker):
     fake_service.ingest_all_tables.assert_called_once()
     fake_service.close.assert_called_once()
 
-
     # result = mock_service.return_value.ingest_all_tables()
-       
-    
 
     # response = lambda_handler()
     # body = json.loads(response["body"])
 
     # assert response["statusCode"] == 200
-    
-    
-
-
-

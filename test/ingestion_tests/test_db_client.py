@@ -28,8 +28,6 @@ def test_db_client_initialises_correctly(mocker):
     assert client.conn == fake_connection
 
 
-
-
 def test_missing_env_variables_raises_error(mocker):
     mocker.patch.dict(os.environ, {}, clear=True)
 
@@ -37,24 +35,23 @@ def test_missing_env_variables_raises_error(mocker):
         DatabaseClient()
 
 
-
 def test_run_executes_sql_and_returns_dict_rows(mocker):
     # Arrange environment
-    mocker.patch.dict(os.environ, {
-        "DB_HOST": "localhost",
-        "DB_NAME": "testdb",
-        "DB_USER": "user",
-        "DB_PASSWORD": "pass",
-        "DB_PORT": "5432",
-    })
+    mocker.patch.dict(
+        os.environ,
+        {
+            "DB_HOST": "localhost",
+            "DB_NAME": "testdb",
+            "DB_USER": "user",
+            "DB_PASSWORD": "pass",
+            "DB_PORT": "5432",
+        },
+    )
 
     # Fake row + columns returned by database
     fake_conn = mocker.Mock()
     fake_conn.run.return_value = [(1, "Aaron")]
-    fake_conn.columns = [
-        {"name": "id"},
-        {"name": "name"}
-    ]
+    fake_conn.columns = [{"name": "id"}, {"name": "name"}]
 
     mocker.patch("src.ingestion.db_client.Connection", return_value=fake_conn)
 
@@ -66,16 +63,17 @@ def test_run_executes_sql_and_returns_dict_rows(mocker):
     fake_conn.run.assert_called_once()
 
 
-
-
 def test_fetch_preview_calls_run_with_limit(mocker):
-    mocker.patch.dict(os.environ, {
-        "DB_HOST": "localhost",
-        "DB_NAME": "testdb",
-        "DB_USER": "user",
-        "DB_PASSWORD": "pass",
-        "DB_PORT": "5432",
-    })
+    mocker.patch.dict(
+        os.environ,
+        {
+            "DB_HOST": "localhost",
+            "DB_NAME": "testdb",
+            "DB_USER": "user",
+            "DB_PASSWORD": "pass",
+            "DB_PORT": "5432",
+        },
+    )
 
     fake_conn = mocker.Mock()
     fake_conn.run.return_value = []
@@ -89,23 +87,22 @@ def test_fetch_preview_calls_run_with_limit(mocker):
 
     result = client.fetch_preview("staff", limit=5)
 
-    client.run.assert_called_with(
-        "SELECT * FROM staff LIMIT :limit",
-        {"limit": 5}
-    )
+    client.run.assert_called_with("SELECT * FROM staff LIMIT :limit", {"limit": 5})
 
     assert isinstance(result, dict)
 
 
-
 def test_close_calls_connection_close(mocker):
-    mocker.patch.dict(os.environ, {
-        "DB_HOST": "localhost",
-        "DB_NAME": "testdb",
-        "DB_USER": "user",
-        "DB_PASSWORD": "pass",
-        "DB_PORT": "5432",
-    })
+    mocker.patch.dict(
+        os.environ,
+        {
+            "DB_HOST": "localhost",
+            "DB_NAME": "testdb",
+            "DB_USER": "user",
+            "DB_PASSWORD": "pass",
+            "DB_PORT": "5432",
+        },
+    )
 
     fake_conn = mocker.Mock()
     mocker.patch("src.ingestion.db_client.Connection", return_value=fake_conn)
