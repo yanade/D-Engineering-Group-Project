@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 from pg8000.native import Connection
 from datetime import datetime
-import pg8000
 import os
 import logging
 import boto3
@@ -52,7 +51,7 @@ class DatabaseClient:
             self.password = secret.get("password")
             self.port = int(secret.get("port", 5432))
             logger.info("Using Secrets Manager for DB connection")
-        logger.info(f"Loaded DB env variables")
+        logger.info("Loaded DB env variables")
         if not all([self.host, self.database, self.user, self.password, self.port]):
             logger.error("Missing required DB environment variables!")
             raise ValueError("One or more database environment variables are missing.")
@@ -66,7 +65,7 @@ class DatabaseClient:
             )
             logger.info("Database connection successfully.")
         except Exception as e:
-            logger.exception("Failed to database connection.")
+            logger.exception(f"Failed to database connection: {e}")
             raise
 
     def run(self, sql: str, params: dict | None = None):
@@ -81,7 +80,7 @@ class DatabaseClient:
             logger.info(f"SQL executed successfully. Returned {len(result)} rows.")
             return result
         except Exception as e:
-            logger.exception(f"Error executing SQL: {sql}")
+            logger.exception(f"Error executing SQL: {sql}, {e}")
             raise
 
     def fetch_preview(self, table_name: str, limit: int = 10):
@@ -137,8 +136,8 @@ class DatabaseClient:
             logger.info(f"Columns for table '{table_name}': {rows}")
             return rows
 
-        except Exception:
-            logger.exception(f"Failed to get columns for table '{table_name}'")
+        except Exception as e:
+            logger.exception(f"Failed to get columns for table '{table_name}', {e}")
             raise
 
     def infer_timestamp_column(self, table_name: str):
@@ -190,9 +189,9 @@ class DatabaseClient:
             logger.warning(f"[{table_name}] No timestamp/date columns found.")
             return None
 
-        except Exception:
+        except Exception as e:
             logger.exception(
-                f"Failed to infer timestamp column for table '{table_name}'"
+                f"Failed to infer timestamp column for table '{table_name}','{e}'"
             )
             raise
 
@@ -232,7 +231,7 @@ class DatabaseClient:
 
         except Exception as e:
             logger.exception(
-                f"Failed to fetch incremental data from table '{table_name}'"
+                f"Failed to fetch incremental data from table '{table_name}','{e}'"
             )
             raise
 
@@ -240,5 +239,5 @@ class DatabaseClient:
         try:
             self.conn.close()
             logger.info("Database connection closed.")
-        except:
-            logger.warning("Failed to close database connection cleanly.")
+        except Exception as e:
+            logger.warning(f"Failed to close database connection cleanly: {e}")

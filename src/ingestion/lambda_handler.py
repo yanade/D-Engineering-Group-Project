@@ -4,7 +4,6 @@ import os
 from ingest_service import IngestionService
 
 
-
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -22,16 +21,12 @@ def lambda_handler(event, context):
         logger.info(f"Ingestion complete: {result}")
         return {
             "statusCode": 200,
-            "body": json.dumps({
-                "message": "Ingestion Lambda executed",
-                "result": result
-            }),
+            "body": json.dumps(
+                {"message": "Ingestion Lambda executed", "result": result}
+            ),
         }
     except Exception as e:
         logger.exception("Lambda failed during ingestion")
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"error": str(e)})
-        }
+        return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
     finally:
         service.close()

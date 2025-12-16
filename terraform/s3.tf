@@ -6,6 +6,7 @@ resource "random_id" "bucket_suffix" {
 # LANDING ZONE BUCKET ONLY (Week 1)
 resource "aws_s3_bucket" "landing_zone" {
   bucket = "gamboge-landing-${var.environment}-${random_id.bucket_suffix.hex}"
+  force_destroy = true 
   
   tags = {
     Name        = "landing-zone"

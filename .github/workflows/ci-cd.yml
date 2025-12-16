@@ -36,6 +36,14 @@ jobs:
           run:  |
               export PYTHONPATH=.
               pytest -v
+        
+        - name: Install Black
+          run: pip install black
+
+        - name: Run Black (check only)
+          run: |
+              black src/ingestion/ --check
+              black --check .
 
 
         - name: Install linting and security tools
@@ -44,7 +52,7 @@ jobs:
 
 
         - name: Lint with flake8
-          run: flake8 src/ingestion
+          run: flake8 src/ --max-line-length=120
 
 
         - name: Security - bandit

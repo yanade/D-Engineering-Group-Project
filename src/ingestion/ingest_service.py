@@ -4,11 +4,8 @@ from datetime import datetime, timezone
 import logging
 
 
-
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-
 
 
 class IngestionService:
@@ -25,7 +22,9 @@ class IngestionService:
         self.s3 = S3Client(bucket)
 
     def ingest_table_preview(self, table_name: str, limit: int = 10):
-        logger.info(f"Starting ingestion preview for table '{table_name}', limit={limit}")
+        logger.info(
+            f"Starting ingestion preview for table '{table_name}', limit={limit}"
+        )
 
         try:
             # DB fetch MUST return {'columns': [...], 'rows': [...]}
@@ -41,7 +40,7 @@ class IngestionService:
                 "columns": columns,
                 "rows": rows,
                 "limit": limit,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
             s3_key = self.s3.write_json(table_name, raw_payload)
@@ -56,11 +55,13 @@ class IngestionService:
                 "table": table_name,
                 "row_count": len(rows),
                 "s3_key": s3_key,
-                "timestamp": raw_payload["timestamp"]
+                "timestamp": raw_payload["timestamp"],
             }
 
         except Exception as e:
-            logger.exception(f"Ingestion preview FAILED for table '{table_name}'. Error: {e}")
+            logger.exception(
+                f"Ingestion preview FAILED for table '{table_name}'. Error: {e}"
+            )
             raise
 
     def ingest_table_changes(self, table_name: str):
@@ -72,17 +73,20 @@ class IngestionService:
 
             # Fetch new/updated rows from DB since last checkpoint
             changes = self.db.fetch_changes(table_name, since=last_checkpoint)
-         
 
-            logger.info(f"Fetched {len(changes)} changed rows from table '{table_name}' since '{last_checkpoint}'")
+            logger.info(
+                f"Fetched {len(changes)} changed rows from table '{table_name}' since '{last_checkpoint}'"
+            )
             if not changes:
-                logger.info(f"No new changes found for table '{table_name}'. Skipping S3 upload.")
+                logger.info(
+                    f"No new changes found for table '{table_name}'. Skipping S3 upload."
+                )
                 return {
                     "table": table_name,
                     "row_count": 0,
                     "s3_key": None,
-                    "status": "no_changes"}
-            
+                    "status": "no_changes",
+                }
 
             s3_key = self.s3.write_json(table_name=table_name, data=changes)
 
@@ -90,7 +94,7 @@ class IngestionService:
                 f"Incremental ingestion complete for table '{table_name}'. "
                 f"Uploaded to S3 key: {s3_key}"
             )
-            
+
             timestamp_col = self.db.infer_timestamp_column(table_name)
             if timestamp_col is not None:
                 raw_checkpoint = max(row[timestamp_col] for row in changes)
@@ -100,25 +104,28 @@ class IngestionService:
                     new_checkpoint = raw_checkpoint
                 self.s3.write_checkpoint(table_name, timestamp=new_checkpoint)
                 logger.info(
-                    f"Updated checkpoint for table '{table_name}' to '{new_checkpoint}'")
+                    f"Updated checkpoint for table '{table_name}' to '{new_checkpoint}'"
+                )
                 checkpoint_str = new_checkpoint.isoformat()
             else:
                 checkpoint_str = None
-                logger.info(f"[{table_name}] No timestamp column found; checkpoint not updated.")
-            
+                logger.info(
+                    f"[{table_name}] No timestamp column found; checkpoint not updated."
+                )
+
             # RETURN METADATA ONLY (no heavy payload)
             return {
                 "table": table_name,
                 "row_count": len(changes),
                 "s3_key": s3_key,
-                "checkpoint": checkpoint_str
+                "checkpoint": checkpoint_str,
             }
 
         except Exception as e:
-            logger.exception(f"Incremental ingestion FAILED for table '{table_name}'. Error: {e}")
+            logger.exception(
+                f"Incremental ingestion FAILED for table '{table_name}'. Error: {e}"
+            )
             raise
-
-
 
     def ingest_all_tables(self, tables: list[str] | None = None, limit: int = 50):
         """
@@ -136,7 +143,7 @@ class IngestionService:
                 continue
 
             try:
-                #CHANGED LINE 142
+                # CHANGED LINE 142
                 result = self.ingest_table_changes(table)
                 results[table] = {"status": "success", **result}
 
@@ -150,5 +157,3 @@ class IngestionService:
     def close(self):
         logger.info("Closing IngestionService resources...")
         self.db.close()
-
-    

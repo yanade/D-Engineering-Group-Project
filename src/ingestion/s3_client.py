@@ -12,6 +12,7 @@ class S3Client:
     """
     Raw ingestion layer
     """
+
     def __init__(self, bucket: str):
         self.bucket = bucket
         self.s3 = boto3.client("s3")
@@ -27,16 +28,16 @@ class S3Client:
 
         try:
             self.s3.put_object(
-                Bucket=self.bucket,
-                Key=key,
-                Body=json.dumps(data, default=str)
+                Bucket=self.bucket, Key=key, Body=json.dumps(data, default=str)
             )
 
             logger.info(f"S3 upload successful → s3://{self.bucket}/{key}")
             return key
-        
+
         except Exception as e:
-            logger.exception(f"Failed to upload JSON to S3 (bucket={self.bucket}, key={key})")
+            logger.exception(
+                f"Failed to upload JSON to S3 (bucket={self.bucket}, key={key}, {e})"
+            )
             raise
 
     def get_checkpoint(self, table_name: str):
@@ -55,7 +56,7 @@ class S3Client:
             logger.info(f"No checkpoint found for table '{table_name}'")
             return None
         except Exception as e:
-            logger.exception(f"Failed to retrieve checkpoint for table '{table_name}'")
+            logger.exception(f"Failed to retrieve checkpoint for table '{table_name}', {e}")
             raise
 
     def write_checkpoint(self, table_name: str, timestamp: datetime):
@@ -69,7 +70,7 @@ class S3Client:
         key = f"checkpoints/{table_name}_checkpoint.json"
         data = {
             "table": table_name,
-            "last_ingested": timestamp.astimezone(timezone.utc).isoformat()
+            "last_ingested": timestamp.astimezone(timezone.utc).isoformat(),
         }
         logger.info(
             f"Saving checkpoint for table '{table_name}': {data['last_ingested']}"
@@ -80,10 +81,12 @@ class S3Client:
                 Bucket=self.bucket,
                 Key=key,
                 Body=json.dumps(data),
-                ContentType="application/json"
+                ContentType="application/json",
             )
-            logger.info(f"Wrote checkpoint for table '{table_name}': {data['last_ingested']}")
-        
+            logger.info(
+                f"Wrote checkpoint for table '{table_name}': {data['last_ingested']}"
+            )
+
         except Exception as e:
-            logger.exception(f"Failed to write checkpoint for table '{table_name}'")
+            logger.exception(f"Failed to write checkpoint for table '{table_name}', {e}")
             raise
