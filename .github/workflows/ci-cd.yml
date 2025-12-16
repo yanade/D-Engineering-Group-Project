@@ -34,7 +34,7 @@ jobs:
 
         - name: Run pytest
           run:  |
-              export PYTHONPATH=src/ingestion
+              export PYTHONPATH=.
               pytest -v
 
 
