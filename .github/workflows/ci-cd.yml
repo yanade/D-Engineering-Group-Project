@@ -34,7 +34,7 @@ jobs:
 
         - name: Run pytest
           run:  |
-              export PYTHONPATH= .
+              export PYTHONPATH=.
               pytest -v
 
 
