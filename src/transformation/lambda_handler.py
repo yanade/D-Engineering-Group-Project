@@ -1,56 +1,33 @@
+import os
 import json
 import logging
-import os
-import urllib.parse
-
-import boto3
-
+import pandas
+from transformation.transform_service import TransformService
 
 logger = logging.getLogger()
-logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
-
-s3 = boto3.client("s3")
-
+logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
-    """
-    Transform Lambda entry point.
-    Triggered by S3 ObjectCreated events from the landing zone.
-    """
+    logger.info(f"Transformation Lambda triggered with event={event}")
 
-    logger.info("Transform Lambda triggered")
-    logger.debug("Received event: %s", json.dumps(event))
+    landing_bucket = os.getenv("LANDING_BUCKET")
+    processed_bucket = os.getenv("PROCESSED_BUCKET")
+
+    if not landing_bucket or not processed_bucket:
+        raise ValueError("Missing LANDING_BUCKET or PROCESSED_BUCKET env vars")
 
     try:
-        # 1. Extract S3 info from event
-        record = event["Records"][0]
-        source_bucket = record["s3"]["bucket"]["name"]
-        raw_key = record["s3"]["object"]["key"]
+        # optional: log key if the event contains it
+        record = event.get("Records", [{}])[0]
+        raw_key = record.get("s3", {}).get("object", {}).get("key")
+        if raw_key:
+            logger.info(f"Triggered by new landing object: {raw_key}")
 
-        # S3 keys are URL-encoded
-        source_key = urllib.parse.unquote_plus(raw_key)
+        service = TransformService(ingest_bucket=landing_bucket, processed_bucket=processed_bucket)
+        service.run()
 
-        logger.info("Processing object from bucket=%s, key=%s", source_bucket, source_key)
+        return {"statusCode": 200, "body": json.dumps({"message": "Transformation complete"})}
 
-        # 2. Read environment variables
-        processed_bucket = os.environ["PROCESSED_BUCKET_NAME"]
-
-        # 3. Placeholder for transform logic
-        # (we will implement this in the next step)
-        logger.info("Transform target bucket=%s (logic not implemented yet)", processed_bucket)
-
-        return {
-            "statusCode": 200,
-            "body": json.dumps(
-                {
-                    "message": "Transform Lambda executed successfully",
-                    "source_bucket": source_bucket,
-                    "source_key": source_key,
-                    "processed_bucket": processed_bucket,
-                }
-            ),
-        }
-
-    except Exception as exc:
-        logger.exception("Transform Lambda failed")
-        raise exc
+    except Exception as e:
+        logger.exception("Transformation Lambda failed")
+        return {"statusCode": 500, "body": json.dumps({"error": str(e)})}

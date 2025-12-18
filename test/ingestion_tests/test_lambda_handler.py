@@ -1,7 +1,7 @@
 import json
 import os
-from src.ingestion.lambda_handler import lambda_handler
-from src.ingestion.ingest_service import IngestionService
+from ingestion.lambda_handler import lambda_handler
+from ingestion.ingest_service import IngestionService
 
 
 def test_lambda_handler(mocker):

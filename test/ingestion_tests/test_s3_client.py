@@ -1,5 +1,5 @@
 import os
-from src.ingestion.s3_client import S3Client
+from ingestion.s3_client import S3Client
 from datetime import datetime, timezone
 from moto import mock_aws
 import boto3

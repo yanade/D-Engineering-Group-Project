@@ -1,4 +1,4 @@
-from src.ingestion.ingest_service import IngestionService
+from ingestion.ingest_service import IngestionService
 import os
 from datetime import datetime, timezone
 import pytest

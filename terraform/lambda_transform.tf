@@ -13,6 +13,13 @@ data "archive_file" "transform_lambda" {
   ]
 }
 
+# resource "aws_lambda_layer_version" "dependencies_trans" {
+#   layer_name          = "${var.project_name}-dependencies-transform"
+#   filename            = "${path.module}/../transform_deps_layer.zip"
+#   compatible_runtimes = ["python3.12"]
+#   description         = "Python dependencies for transform lambda"
+# }
+
 resource "aws_lambda_function" "transform" {
   function_name = "${var.project_name}-transform-${var.environment}"
   role          = aws_iam_role.lambda_exec.arn
@@ -24,7 +31,9 @@ resource "aws_lambda_function" "transform" {
   filename         = data.archive_file.transform_lambda.output_path
   source_code_hash = data.archive_file.transform_lambda.output_base64sha256
 
-  layers = [aws_lambda_layer_version.dependencies.arn]
+   architectures = ["x86_64"]
+
+  layers = ["arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python312:20"]
 
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory_size

@@ -2,8 +2,9 @@ import json
 import boto3
 import os
 import pandas as pd
+
 # import pyarrow.parquet as pq
-import io 
+import io
 from io import BytesIO
 from datetime import datetime, timezone
 import logging
@@ -23,7 +24,7 @@ class S3TransformationClient:
         obj = self.s3.get_object(Bucket=self.bucket, Key=key)
         raw_data = obj["Body"].read().decode("utf-8")
         return json.loads(raw_data)
-    
+
     def read_table(self, table_name: str) -> pd.DataFrame:
         """
         Reads s3://<bucket>/<table_name>.json and returns as a DataFrame.

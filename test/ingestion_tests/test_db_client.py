@@ -1,7 +1,7 @@
 import os
 import pytest
 from unittest.mock import MagicMock
-from src.ingestion.db_client import DatabaseClient
+from ingestion.db_client import DatabaseClient
 
 
 def test_db_client_initialises_correctly(mocker):
