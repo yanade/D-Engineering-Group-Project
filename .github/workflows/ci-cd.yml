@@ -33,9 +33,9 @@ jobs:
 
 
         - name: Run pytest
-          run:  |
-              export PYTHONPATH=.
-              pytest -v
+          env:
+            PYTHONPATH: src
+          run: pytest
         
         - name: Install Black
           run: pip install black

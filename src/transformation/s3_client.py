@@ -2,7 +2,7 @@ import json
 import boto3
 import os
 import pandas as pd
-
+from uuid import uuid4
 # import pyarrow.parquet as pq
 import io
 from io import BytesIO
@@ -49,8 +49,10 @@ class S3TransformationClient:
 
 
     def write_parquet(self, table_name: str, df: pd.DataFrame):
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")
-        key = f"{table_name}/processed_{timestamp}.parquet"
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        run_id= uuid4().hex
+        key = f"{table_name}/processed_{timestamp}_{run_id}.parquet"
+        # key = f"{table_name}/latest.parquet"
         buffer = BytesIO()
         df.to_parquet(buffer, index=False)
         buffer.seek(0)
