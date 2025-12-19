@@ -33,7 +33,7 @@ resource "aws_lambda_function" "transform" {
 
    architectures = ["x86_64"]
 
-  layers = ["arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python312:20"]
+  layers = ["arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python311:24"]
 
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory_size

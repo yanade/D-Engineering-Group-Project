@@ -12,7 +12,6 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-
 class S3TransformationClient:
     def __init__(self, bucket: str):
         self.bucket = bucket
@@ -27,19 +26,30 @@ class S3TransformationClient:
 
     def read_table(self, table_name: str) -> pd.DataFrame:
         """
-        Reads s3://<bucket>/<table_name>.json and returns as a DataFrame.
-        Assumes JSON is list[dict].
+        Reads ALL raw_*.json files for a table and returns a DataFrame.
         """
-        key = f"{table_name}.json"
-        data = self.read_json(key)
+        prefix = f"{table_name}/"
+        response = self.s3.list_objects_v2(
+            Bucket=self.bucket,
+            Prefix=prefix,
+        )
+        if "Contents" not in response:
+            raise FileNotFoundError(f"No raw data for table '{table_name}'")
+        rows: list[dict] = []
+        for obj in response["Contents"]:
+            key = obj["Key"]
+            if not key.endswith(".json"):
+                continue
+            rows.extend(self.read_json(key))
+        if not rows:
+            raise ValueError(f"No rows found for table '{table_name}'")
+        return pd.DataFrame(rows)
 
-        if isinstance(data, dict) and "data" in data:
-            data = data["data"]
+   
 
-        return pd.DataFrame(data)
 
     def write_parquet(self, table_name: str, df: pd.DataFrame):
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")
         key = f"{table_name}/processed_{timestamp}.parquet"
         buffer = BytesIO()
         df.to_parquet(buffer, index=False)

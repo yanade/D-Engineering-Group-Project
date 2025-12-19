@@ -10,9 +10,6 @@ import sys
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-print(f"DEBUG: Python path: {sys.path}")
-print(f"DEBUG: Current directory: {os.getcwd()}")
-print(f"DEBUG: Environment variables: {dict(os.environ)}")
 load_dotenv()
 
 

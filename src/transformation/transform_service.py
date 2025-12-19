@@ -1,48 +1,35 @@
 import pandas as pd
+
 from typing import Dict
 import logging
-from transformation.s3_client import S3TransformationClient
-
+from s3_client import S3TransformationClient
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-
 class TransformService:
     """
     Transform service tightly coupled to S3TransformationClient
     """
-
     def __init__(self, ingest_bucket: str, processed_bucket: str):
         self.ingest_s3 = S3TransformationClient(ingest_bucket)
         self.processed_s3 = S3TransformationClient(processed_bucket)
         self._cache: Dict[str, pd.DataFrame] = {}
-
         logger.info(f"TransformService initialised. ingest={ingest_bucket}, processed={processed_bucket}")
-
     def _get_ingest_table(self, table_name: str) -> pd.DataFrame:
         if table_name not in self._cache:
             logger.info(f"Fetching ingest table: {table_name}")
             self._cache[table_name] = self.ingest_s3.read_table(table_name)
-        return self._cache[table_name].copy()
-
+        return self._cache[table_name]
     # Dimensions
-
     def make_dim_currency(self) -> pd.DataFrame:
         logger.info("Creating dim_currency")
-
         currency = self._get_ingest_table("currency")
         currency = currency.drop_duplicates(subset=["currency_id"], keep="last")
-
         return currency[["currency_id", "currency_code"]]
-
     def make_dim_staff(self) -> pd.DataFrame:
         logger.info("Creating dim_staff")
-
         staff = self._get_ingest_table("staff").drop_duplicates(subset=["staff_id"], keep="last")
         department = self._get_ingest_table("department").drop_duplicates(subset=["department_id"], keep="last")
-
         dim = staff.join(department, on="department_id", rsuffix="_dept")
-
         return dim[
             [
                 "staff_id",
@@ -53,20 +40,15 @@ class TransformService:
                 "email_address",
             ]
         ]
-
     def make_dim_counterparty(self) -> pd.DataFrame:
         logger.info("Creating dim_counterparty")
-
         counterparty = self._get_ingest_table("counterparty").drop_duplicates(subset=["counterparty_id"], keep="last")
-
         address = (
             self._get_ingest_table("address")
             .drop_duplicates(subset=["address_id"], keep="last")
             .rename(columns={"address_id": "legal_address_id"})
         )
-
         dim = counterparty.join(address, on="legal_address_id", rsuffix="_addr")
-
         return dim.rename(
             columns={
                 "address_line_1": "counterparty_legal_address_line_1",
@@ -90,56 +72,37 @@ class TransformService:
                 "counterparty_legal_phone_number",
             ]
         ]
-
     def make_dim_design(self) -> pd.DataFrame:
         logger.info("Creating dim_design")
-
         design = self._get_ingest_table("design").drop_duplicates(subset=["design_id"], keep="last")
-
         return design[["design_id", "design_name", "file_location", "file_name"]]
-
     def make_dim_payment_type(self) -> pd.DataFrame:
         logger.info("Creating dim_payment_type")
-
         payment_type = self._get_ingest_table("payment_type").drop_duplicates(subset=["payment_type_id"], keep="last")
-
         return payment_type[["payment_type_id", "payment_type_name"]]
-
     def make_dim_date(self) -> pd.DataFrame:
         logger.info("Creating dim_date")
-
         payments = self._get_ingest_table("payment")
         purchases = self._get_ingest_table("purchase_order")
         sales = self._get_ingest_table("sales_order")
-
         logger.info("Getting dates from payment")
         payment_dates = pd.melt(
             payments[["created_at", "last_updated", "payment_date"]]
         )["value"]
-
         logger.info("Getting dates from sales_order")
         sales_dates = pd.melt(
             sales[["created_at", "last_updated", "agreed_delivery_date", "agreed_payment_date"]]
         )["value"]
-
         logger.info("Getting dates from purchase_order")
         purchase_dates = pd.melt(
             purchases[["created_at", "last_updated", "agreed_delivery_date", "agreed_payment_date"]]
         )["value"]
-
         logger.info("Collating dates")
         total_dates = pd.concat([payment_dates, sales_dates, purchase_dates], ignore_index=True)
-
-        
-        total_dates = pd.to_datetime(total_dates, errors="coerce", utc=True)
-
-        
+        total_dates = pd.to_datetime(total_dates, format="mixed", errors="coerce", utc=True)
         total_dates = total_dates.dropna().dt.normalize().drop_duplicates().sort_values()
-
-      
         dates = pd.DataFrame({"date": total_dates.dt.date})
-        dt = pd.to_datetime(dates["date"])  # guaranteed datetime64[ns]
-
+        dt = pd.to_datetime(dates["date"], format="mixed", errors="coerce")  # guaranteed datetime64[ns]
         dates["year"] = dt.dt.year
         dates["month"] = dt.dt.month
         dates["day"] = dt.dt.day
@@ -147,15 +110,11 @@ class TransformService:
         dates["day_name"] = dt.dt.day_name()
         dates["month_name"] = dt.dt.month_name()
         dates["quarter"] = dt.dt.quarter
-
         dates.insert(0, "date_id", range(1, len(dates) + 1))
         return dates
-
     def make_dim_transaction(self) -> pd.DataFrame:
         logger.info("Creating dim_transaction")
-
         txn = self._get_ingest_table("transaction").drop_duplicates(subset=["transaction_id"], keep="last")
-
         return txn[
             [
                 "transaction_id",
@@ -164,12 +123,9 @@ class TransformService:
                 "purchase_order_id",
             ]
         ]
-
     def make_dim_location(self) -> pd.DataFrame:
         logger.info("Creating dim_location")
-
         address = self._get_ingest_table("address").drop_duplicates(subset=["address_id"], keep="last")
-
         dim_location = address.rename(columns={"address_id": "location_id"})[
             [
                 "location_id",
@@ -182,39 +138,53 @@ class TransformService:
                 "phone",
             ]
         ]
-
         return dim_location
-
         # Fact Tables
-
     def make_fact_sales_order(self) -> pd.DataFrame:
-        logger.info("Creating fact_sales_order")
-
-        sales = self._get_ingest_table("sales_order")
-
-        sales["created_at"] = pd.to_datetime(sales["created_at"])
-        sales["created_date"] = sales["created_at"].dt.date
-
-        return sales[
-            [
-                "sales_order_id",
+        table_name = "fact_sales_order"
+        logger.info(f"Creating {table_name}")
+        sales_order = self._get_ingest_table("sales_order")
+        # source_count = len(sales_order)
+        sales_order["created_date"] = pd.to_datetime(
+            sales_order["created_at"],format="mixed", errors="coerce").dt.date
+        sales_order["created_time"] = pd.to_datetime(
+            sales_order["created_at"],format="mixed", errors="coerce").dt.time
+        sales_order["last_updated_date"] = pd.to_datetime(
+            sales_order["last_updated"],format="mixed", errors="coerce").dt.date
+        sales_order["last_updated_time"] = pd.to_datetime(
+            sales_order["last_updated"],format="mixed", errors="coerce").dt.time
+        sales_order["agreed_payment_date"] = pd.to_datetime(
+            sales_order["agreed_payment_date"], format="mixed",errors="coerce").dt.date
+        sales_order["agreed_delivery_date"] = pd.to_datetime(
+            sales_order["agreed_delivery_date"], format="mixed", errors="coerce").dt.date
+        fact = sales_order[
+                ["sales_order_id",
                 "created_date",
+                "created_time",
+                "last_updated_date",
+                "last_updated_time",
                 "staff_id",
                 "counterparty_id",
                 "units_sold",
                 "unit_price",
                 "currency_id",
                 "design_id",
-                "agreed_delivery_location_id",
-            ]
-        ]
-
+                "agreed_payment_date",
+                "agreed_delivery_date",
+                "agreed_delivery_location_id",]
+            ].rename(
+            columns={
+                "staff_id": "sales_staff_id",
+                "counterparty_id": "sales_counterparty_id",
+            })
+        logger.info(
+            f"Transformation successful: {table_name} rows={len(fact)}"
+        )
+        return fact
     def make_fact_payment(self) -> pd.DataFrame:
         logger.info("Creating fact_payment")
-
         payment = self._get_ingest_table("payment")
-        payment["payment_date"] = pd.to_datetime(payment["payment_date"]).dt.date
-
+        payment["payment_date"] = pd.to_datetime(payment["payment_date"],format="mixed", errors="coerce").dt.date
         return payment[
             [
                 "payment_id",
@@ -227,27 +197,24 @@ class TransformService:
                 "paid",
             ]
         ]
-
     def make_fact_purchase_order(self) -> pd.DataFrame:
         logger.info("Creating fact_purchase_order")
-
-        po = self._get_ingest_table("purchase_order").copy()
-
+        po = self._get_ingest_table("purchase_order")
         # Parse timestamps
-        po["created_at"] = pd.to_datetime(po["created_at"], errors="coerce")
-        po["last_updated"] = pd.to_datetime(po["last_updated"], errors="coerce")
-
+        po["created_at"] = pd.to_datetime(po["created_at"],format="mixed", errors="coerce")
+        po["last_updated"] = pd.to_datetime(po["last_updated"], format="mixed", errors="coerce")
         # Split date/time (as your fact table shows created_date/created_time etc.)
         po["created_date"] = po["created_at"].dt.date
         po["created_time"] = po["created_at"].dt.time
-
         po["last_updated_date"] = po["last_updated"].dt.date
         po["last_updated_time"] = po["last_updated"].dt.time
-
         # Ensure agreed dates are pure dates
-        po["agreed_delivery_date"] = pd.to_datetime(po["agreed_delivery_date"], errors="coerce").dt.date
-        po["agreed_payment_date"] = pd.to_datetime(po["agreed_payment_date"], errors="coerce").dt.date
-
+        # po["agreed_delivery_date"] = pd.to_datetime(format="mixed", errors="coercepo["agreed_delivery_date"], errors="coerce").dt.date
+        # po["agreed_payment_date"] = pd.to_datetime(format="mixed", errors="coercepo["agreed_payment_date"], errors="coerce").dt.date
+        po["agreed_payment_date"] = pd.to_datetime(
+            po["agreed_payment_date"],format="mixed", errors="coerce").dt.date
+        po["agreed_delivery_date"] = pd.to_datetime(
+            po["agreed_delivery_date"], format="mixed", errors="coerce").dt.date
         fact = po[
             [
                 "purchase_order_id",
@@ -265,18 +232,13 @@ class TransformService:
                 "agreed_payment_date",
                 "agreed_delivery_location_id",
             ]
-        ].copy()
-
+        ]
         # Add surrogate key like in the schema
         fact.insert(0, "purchase_record_id", range(1, len(fact) + 1))
-
         return fact
-    
     # Orchestration
-
     def run(self):
         logger.info("Starting transformation run")
-
         outputs = {
             "dim_transaction": self.make_dim_transaction(),
             "dim_staff": self.make_dim_staff(),
@@ -290,9 +252,7 @@ class TransformService:
             "fact_purchase_orders": self.make_fact_purchase_order(),
             "fact_payment": self.make_fact_payment(),
         }
-
         for name, df in outputs.items():
             logger.info(f"Writing {name} ({len(df)} rows)")
             self.processed_s3.write_parquet(name, df)
-
         logger.info("Transformation run completed successfully")

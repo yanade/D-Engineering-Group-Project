@@ -2,7 +2,7 @@ import os
 import json
 import logging
 import pandas
-from transformation.transform_service import TransformService
+from transform_service import TransformService
 
 
 logger = logging.getLogger()
@@ -11,8 +11,8 @@ logger.setLevel(logging.INFO)
 def lambda_handler(event, context):
     logger.info(f"Transformation Lambda triggered with event={event}")
 
-    landing_bucket = os.getenv("LANDING_BUCKET")
-    processed_bucket = os.getenv("PROCESSED_BUCKET")
+    landing_bucket = os.getenv("LANDING_BUCKET_NAME")
+    processed_bucket = os.getenv("PROCESSED_BUCKET_NAME")
 
     if not landing_bucket or not processed_bucket:
         raise ValueError("Missing LANDING_BUCKET or PROCESSED_BUCKET env vars")
