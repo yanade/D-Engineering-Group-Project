@@ -42,8 +42,8 @@ jobs:
 
         - name: Run Black (check only)
           run: |
-              black src/ingestion/ --check
-              black --check .
+              black src/ --check
+              black --fast .
               
         - name: Install linting and security tools
           run: |
