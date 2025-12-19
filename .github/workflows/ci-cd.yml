@@ -42,8 +42,7 @@ jobs:
 
         - name: Run Black (check only)
           run: |
-              black src test
-            
+              black src test            
 
         - name: Install linting and security tools
           run: |
