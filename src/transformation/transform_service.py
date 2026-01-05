@@ -6,21 +6,53 @@ from transformation.s3_client import S3TransformationClient
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-TRANSFORM_MAP = {
-    # Dimensions
-    "currency": "make_dim_currency",
-    "staff": "make_dim_staff",
-    "department": "make_dim_staff",
-    "counterparty": "make_dim_counterparty",
-    "design": "make_dim_design",
-    "payment_type": "make_dim_payment_type",
-    "transaction": "make_dim_transaction",
+# TRANSFORM_MAP = {
+#     # Dimensions
+#     "currency": "make_dim_currency",
+#     "staff": "make_dim_staff",
+#     "address": "make_dim_location",
+#     "counterparty": "make_dim_counterparty",
+#     "design": "make_dim_design",
+#     "payment_type": "make_dim_payment_type",
+#     "transaction": "make_dim_transaction",
+#     "dates": "make_dim_date",
+#     # Facts
+#     "sales_order": "make_fact_sales_order",
+#     "purchase_order": "make_fact_purchase_order",
+#     "payment": "make_fact_payment",
+# }
 
-    # Facts
-    "sales_order": "make_fact_sales_order",
-    "purchase_order": "make_fact_purchase_order",
-    "payment": "make_fact_payment",
+TRANSFORM_MAP = {
+    "payment": ["make_fact_payment", "make_dim_date"],
+    "sales_order": ["make_fact_sales_order", "make_dim_date"],
+    "purchase_order": ["make_fact_purchase_order", "make_dim_date"],
+
+    "currency": ["make_dim_currency"],
+    "staff": ["make_dim_staff"],
+    "address": ["make_dim_location"],
+    "counterparty": ["make_dim_counterparty"],
+    "design": ["make_dim_design"],
+    "payment_type": ["make_dim_payment_type"],
+    "transaction": ["make_dim_transaction"],
 }
+
+
+OUTPUT_NAME = {
+    "make_dim_date": "dim_date",
+    "make_fact_payment": "fact_payment",
+    "make_fact_sales_order": "fact_sales_order",
+    "make_fact_purchase_order": "fact_purchase_order",
+    "make_dim_currency": "dim_currency",
+    "make_dim_staff": "dim_staff",
+    "make_dim_location": "dim_location",
+    "make_dim_counterparty": "dim_counterparty",
+    "make_dim_design": "dim_design",
+    "make_dim_payment_type": "dim_payment_type",
+    "make_dim_transaction": "dim_transaction",
+}
+
+
+
 
 class TransformService:
     """
@@ -59,6 +91,25 @@ class TransformService:
                 "email_address",
             ]
         ]
+    
+    def make_dim_location(self) -> pd.DataFrame:
+        logger.info("Creating dim_location")
+        address = self._get_ingest_table("address").drop_duplicates(subset=["address_id"], keep="last")
+        dim_location = address.rename(columns={"address_id": "location_id"})
+        return dim_location[
+            [
+                "location_id",
+                "address_line_1",
+                "address_line_2",
+                "district",
+                "city",
+                "postal_code",
+                "country",
+                "phone",
+            ]
+        ]
+        
+
     def make_dim_counterparty(self) -> pd.DataFrame:
         logger.info("Creating dim_counterparty")
         counterparty = self._get_ingest_table("counterparty").drop_duplicates(subset=["counterparty_id"], keep="last")
@@ -153,22 +204,22 @@ class TransformService:
         ]
     
 
-    def make_dim_location(self) -> pd.DataFrame:
-        logger.info("Creating dim_location")
-        address = self._get_ingest_table("address").drop_duplicates(subset=["address_id"], keep="last")
-        dim_location = address.rename(columns={"address_id": "location_id"})[
-            [
-                "location_id",
-                "address_line_1",
-                "address_line_2",
-                "district",
-                "city",
-                "postal_code",
-                "country",
-                "phone",
-            ]
-        ]
-        return dim_location
+    # def make_dim_location(self) -> pd.DataFrame:
+    #     logger.info("Creating dim_location")
+    #     address = self._get_ingest_table("address").drop_duplicates(subset=["address_id"], keep="last")
+    #     dim_location = address.rename(columns={"address_id": "location_id"})[
+    #         [
+    #             "location_id",
+    #             "address_line_1",
+    #             "address_line_2",
+    #             "district",
+    #             "city",
+    #             "postal_code",
+    #             "country",
+    #             "phone",
+    #         ]
+    #     ]
+    #     return dim_location
     
 
         # Fact Tables
@@ -277,6 +328,7 @@ class TransformService:
     # Orchestration
     def run(self):
         logger.info("Starting transformation run")
+        logger.info(f"TRANSFORM_MAP contains: {list(TRANSFORM_MAP.keys())}")
         outputs = {
             "dim_transaction": self.make_dim_transaction(),
             "dim_staff": self.make_dim_staff(),
@@ -290,35 +342,73 @@ class TransformService:
             "fact_purchase_orders": self.make_fact_purchase_order(),
             "fact_payment": self.make_fact_payment(),
         }
+
+        logger.info(f"Generated {len(outputs)} tables: {list(outputs.keys())}")
+
         for name, df in outputs.items():
             logger.info(f"Writing {name} ({len(df)} rows)")
+            if df is not None and len(df) > 0:
+                self.processed_s3.write_parquet(name, df)
+            else:
+                logger.warning(f"{name} is empty or None, skipping")
             self.processed_s3.write_parquet(name, df)
         logger.info("Transformation run completed successfully")
+
+  
+
+
+    # def run_single_table(self, table_name: str):
+    #     logger.info(f"Running single-table transformation for '{table_name}'")
+
+    #     if table_name not in TRANSFORM_MAP:
+    #         logger.warning(f"No transformation mapped for '{table_name}'")
+    #         return {
+    #             "table": table_name,
+    #             "status": "skipped",
+    #             "reason": "no_transform_defined"
+    #         }
+
+    #     transform_method_name = TRANSFORM_MAP[table_name]
+    #     transform_method = getattr(self, transform_method_name)
+
+    #     df = transform_method()
+
+    #     logger.info(f"Writing transformed table '{transform_method_name}' ({len(df)} rows)")
+    #     s3_key = self.processed_s3.write_parquet(transform_method_name, df)
+
+    #     return {
+    #         "table": table_name,
+    #         "output": transform_method_name,
+    #         "rows": len(df),
+    #         "s3_key": s3_key,
+    #         "status": "success",
+    #     }
+
 
 
     def run_single_table(self, table_name: str):
         logger.info(f"Running single-table transformation for '{table_name}'")
 
-        if table_name not in TRANSFORM_MAP:
+        methods = TRANSFORM_MAP.get(table_name)
+        if not methods:
             logger.warning(f"No transformation mapped for '{table_name}'")
-            return {
-                "table": table_name,
-                "status": "skipped",
-                "reason": "no_transform_defined"
-            }
+            return {"table": table_name, "status": "skipped", "reason": "no_transform_defined"}
 
-        transform_method_name = TRANSFORM_MAP[table_name]
-        transform_method = getattr(self, transform_method_name)
+        results = []
 
-        df = transform_method()
+        for method_name in methods:
+            transform_method = getattr(self, method_name)
+            df = transform_method()
 
-        logger.info(f"Writing transformed table '{transform_method_name}' ({len(df)} rows)")
-        s3_key = self.processed_s3.write_parquet(transform_method_name, df)
+            output_name = OUTPUT_NAME.get(method_name, method_name)
+            logger.info(f"Writing '{output_name}' from '{method_name}' ({len(df)} rows)")
+            s3_key = self.processed_s3.write_parquet(output_name, df)
 
-        return {
-            "table": table_name,
-            "output": transform_method_name,
-            "rows": len(df),
-            "s3_key": s3_key,
-            "status": "success",
-        }
+            results.append({
+                "method": method_name,
+                "output": output_name,
+                "rows": len(df),
+                "s3_key": s3_key,
+            })
+
+        return {"table": table_name, "status": "success", "results": results}
