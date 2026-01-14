@@ -31,3 +31,11 @@ data "aws_secretsmanager_secret" "totesys_creds" {
 data "aws_secretsmanager_secret_version" "totesys_creds_value" {
   secret_id = data.aws_secretsmanager_secret.totesys_creds.id
 }
+
+# data "aws_secretsmanager_secret" "dw_creds" {
+#   name = "${var.project_name}/dw/${var.environment}"
+# }
+
+# data "aws_secretsmanager_secret_version" "dw_creds_value" {
+#   secret_id = data.aws_secretsmanager_secret.dw_creds.id
+# }

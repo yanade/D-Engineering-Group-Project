@@ -6,21 +6,6 @@ from transformation.s3_client import S3TransformationClient
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# TRANSFORM_MAP = {
-#     # Dimensions
-#     "currency": "make_dim_currency",
-#     "staff": "make_dim_staff",
-#     "address": "make_dim_location",
-#     "counterparty": "make_dim_counterparty",
-#     "design": "make_dim_design",
-#     "payment_type": "make_dim_payment_type",
-#     "transaction": "make_dim_transaction",
-#     "dates": "make_dim_date",
-#     # Facts
-#     "sales_order": "make_fact_sales_order",
-#     "purchase_order": "make_fact_purchase_order",
-#     "payment": "make_fact_payment",
-# }
 
 TRANSFORM_MAP = {
     "payment": ["make_fact_payment", "make_dim_date"],
@@ -203,23 +188,6 @@ class TransformService:
             ]
         ]
     
-
-    # def make_dim_location(self) -> pd.DataFrame:
-    #     logger.info("Creating dim_location")
-    #     address = self._get_ingest_table("address").drop_duplicates(subset=["address_id"], keep="last")
-    #     dim_location = address.rename(columns={"address_id": "location_id"})[
-    #         [
-    #             "location_id",
-    #             "address_line_1",
-    #             "address_line_2",
-    #             "district",
-    #             "city",
-    #             "postal_code",
-    #             "country",
-    #             "phone",
-    #         ]
-    #     ]
-    #     return dim_location
     
 
         # Fact Tables
@@ -355,34 +323,6 @@ class TransformService:
         logger.info("Transformation run completed successfully")
 
   
-
-
-    # def run_single_table(self, table_name: str):
-    #     logger.info(f"Running single-table transformation for '{table_name}'")
-
-    #     if table_name not in TRANSFORM_MAP:
-    #         logger.warning(f"No transformation mapped for '{table_name}'")
-    #         return {
-    #             "table": table_name,
-    #             "status": "skipped",
-    #             "reason": "no_transform_defined"
-    #         }
-
-    #     transform_method_name = TRANSFORM_MAP[table_name]
-    #     transform_method = getattr(self, transform_method_name)
-
-    #     df = transform_method()
-
-    #     logger.info(f"Writing transformed table '{transform_method_name}' ({len(df)} rows)")
-    #     s3_key = self.processed_s3.write_parquet(transform_method_name, df)
-
-    #     return {
-    #         "table": table_name,
-    #         "output": transform_method_name,
-    #         "rows": len(df),
-    #         "s3_key": s3_key,
-    #         "status": "success",
-    #     }
 
 
 

@@ -25,10 +25,10 @@ resource "aws_lambda_function" "ingestion" {
   layers = [aws_lambda_layer_version.dependencies.arn]
 
 
-  vpc_config {
-    subnet_ids         = slice(data.aws_subnets.default.ids, 0, 2)  # Use first 2 subnets
-    security_group_ids = [aws_security_group.lambda_sg.id]
-  }
+#  vpc_config {
+#   subnet_ids         = [aws_subnet.private_a.id,aws_subnet.private_b.id]
+#   security_group_ids = [aws_security_group.lambda_sg.id]
+# }
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory_size
   
@@ -50,7 +50,7 @@ resource "aws_lambda_function" "ingestion" {
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "ingestion_logs" {
   name              = "/aws/lambda/${aws_lambda_function.ingestion.function_name}"
-  retention_in_days = 7
+  # retention_in_days = 7
   
   tags = {
     Stage = "Week1-Ingestion"

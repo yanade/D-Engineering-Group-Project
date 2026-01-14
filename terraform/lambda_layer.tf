@@ -28,8 +28,8 @@
 # }
 resource "aws_lambda_layer_version" "dependencies" {
   layer_name          = "${var.project_name}-dependencies"
-  filename            = "${path.module}/../lambda_layer/lambda_layer.zip"
-  compatible_runtimes = ["python3.12"]
+  filename            = "${path.module}/../lambda_layer/lambda_layer2.zip"
+  compatible_runtimes = ["python3.11"]
   description = "Python dependencies for ingestion lambda"
 }
 # resource "aws_lambda_layer_version" "dependencies" {

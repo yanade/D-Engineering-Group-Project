@@ -62,16 +62,37 @@ output "load_lambda_name" {
 
 output "dw_secret_arn" {
   description = "ARN of the data warehouse secret"
-  value       = aws_secretsmanager_secret.dw_creds.arn
+  value       = data.aws_secretsmanager_secret.dw_creds.arn
   sensitive   = true
 }
 
-output "vpc_id" {
-  description = "VPC ID used for deployment"
-  value       = data.aws_vpc.default.id
-}
+# output "vpc_id" {
+#   description = "VPC ID used for deployment"
+#   value       = data.aws_vpc.default.id
+#}
 
 output "lambda_security_group_id" {
   description = "Security group ID for Lambda functions"
   value       = aws_security_group.lambda_sg.id
+}
+
+# VPC Outputs
+output "vpc_id" {
+  description = "ID of the ETL VPC"
+  value       = aws_vpc.etl_vpc.id
+}
+
+output "private_subnet_ids" {
+  description = "IDs of private subnets"
+  value       = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+}
+
+output "db_subnet_ids" {
+  description = "IDs of database subnets"
+  value       = [aws_subnet.db_a.id, aws_subnet.db_b.id]
+}
+
+output "vpc_endpoint_s3_id" {
+  description = "ID of S3 VPC endpoint"
+  value       = aws_vpc_endpoint.s3.id
 }

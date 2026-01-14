@@ -52,7 +52,8 @@ resource "aws_iam_role_policy" "lambda_s3_permissions" {
         Effect = "Allow"
         Action = [
           "s3:PutObject",
-          "s3:ListBucket"
+          "s3:ListBucket",
+          "s3:GetObject"
         ]
         Resource = [
           aws_s3_bucket.processed_zone.arn,
@@ -96,7 +97,7 @@ resource "aws_iam_role_policy" "lambda_secrets_access" {
         Action = ["secretsmanager:GetSecretValue"]
         Resource = [
           data.aws_secretsmanager_secret.totesys_creds.arn,
-          aws_secretsmanager_secret.dw_creds.arn  # ADD THIS LINE
+          data.aws_secretsmanager_secret.dw_creds.arn
         ]
       }
     ]

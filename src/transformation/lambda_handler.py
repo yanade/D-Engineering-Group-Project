@@ -1,12 +1,12 @@
 import os
 import json
 import logging
-# import pandas
 from transformation.transform_service import TransformService
-
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+
 
 def lambda_handler(event, context):
     logger.info(f"Transformation Lambda triggered with event={event}")
@@ -53,4 +53,4 @@ def lambda_handler(event, context):
         return {
             "statusCode": 500,
             "body": json.dumps({"error": str(e)})
-        }
+       }

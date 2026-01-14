@@ -30,10 +30,10 @@ resource "aws_lambda_function" "transform" {
   layers = ["arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python311:24"]
 
 
-   vpc_config {
-    subnet_ids         = slice(data.aws_subnets.default.ids, 0, 2)  # Use first 2 subnets
-    security_group_ids = [aws_security_group.lambda_sg.id]
-  }
+#  vpc_config {
+#   subnet_ids         = [aws_subnet.private_a.id,aws_subnet.private_b.id]
+#   security_group_ids = [aws_security_group.lambda_sg.id]
+# }
   
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory_size
@@ -57,7 +57,7 @@ resource "aws_lambda_function" "transform" {
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "transform_logs" {
   name              = "/aws/lambda/${aws_lambda_function.transform.function_name}"
-  retention_in_days = 7
+  # retention_in_days = 7
 
   tags = {
     Stage = "Week2-Transform"
