@@ -6,29 +6,29 @@ resource "aws_security_group" "lambda_sg" {
   description = "Security group for Lambda functions"
   vpc_id      = aws_vpc.etl_vpc.id
   
-  # # Allow outbound to RDS
-  # egress {
-  #   from_port   = 5432
-  #   to_port     = 5432
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["10.0.0.0/16"]  # Allow within VPC
-  # }
+  # Allow outbound to RDS
+  egress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]  # Allow within VPC
+  }
   
-  # # Allow outbound HTTPS for AWS services
-  # egress {
-  #   from_port   = 443
-  #   to_port     = 443
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
+  # Allow outbound HTTPS for AWS services
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   
   # Allow outbound for VPC endpoints
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["10.0.0.0/16"]
-  }
+  # egress {
+  #   from_port   = 0
+  #   to_port     = 0
+  #   protocol    = "-1"
+  #   cidr_blocks = ["10.0.0.0/16"]
+  # }
   # egress {
   #   from_port   = 53
   #   to_port     = 53
@@ -55,6 +55,14 @@ resource "aws_security_group" "rds_sg" {
     to_port         = 5432
     protocol        = "tcp"
     security_groups = [aws_security_group.lambda_sg.id]
+  }
+
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["80.7.249.208/32"]  # YOUR IP ONLY
+    # Get your IP: curl ifconfig.me
   }
   
   # Allow all outbound
@@ -98,7 +106,7 @@ resource "aws_db_instance" "data_warehouse" {
   # VPC Configuration
   db_subnet_group_name   = aws_db_subnet_group.warehouse.name
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
-  publicly_accessible    = false  # CRITICAL: Set to false
+  publicly_accessible    = true  # CRITICAL: Set to false
   
   # Backup and Maintenance
   backup_retention_period = var.rds_backup_retention
