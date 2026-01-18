@@ -106,7 +106,7 @@ resource "aws_db_instance" "data_warehouse" {
   # VPC Configuration
   db_subnet_group_name   = aws_db_subnet_group.warehouse.name
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
-  publicly_accessible    = true  # CRITICAL: Set to false
+  publicly_accessible    = false  # CRITICAL: Set to false
   
   # Backup and Maintenance
   backup_retention_period = var.rds_backup_retention
