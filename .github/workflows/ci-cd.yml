@@ -61,3 +61,30 @@ jobs:
           run: |
             # Run but don't fail the pipeline  
             pip-audit || echo "pip-audit completed (vulnerabilities found but not blocking)"
+
+    terraform-deploy:
+      needs: run-tests
+      runs-on: ubuntu-latest
+
+    # 🚨 Only deploy from main branch
+      if: github.ref == 'refs/heads/main'
+
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - name: Set up Terraform
+          uses: hashicorp/setup-terraform@v3
+
+        - name: Terraform Init
+          working-directory: terraform
+          run: terraform init
+
+        - name: Terraform Validate
+          working-directory: terraform
+          run: terraform validate
+
+        - name: Terraform Plan
+          working-directory: terraform
+          run: terraform plan
+
