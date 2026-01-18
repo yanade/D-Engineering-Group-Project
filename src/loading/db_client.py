@@ -202,10 +202,7 @@ class WarehouseDBClient:
             
         except Exception as e:
             logger.exception(f" Failed to upsert {table_name}: {e}")
-            try:
-                self.conn.run("ROLLBACK")
-            except:
-                pass
+            self.conn.run("ROLLBACK")
             raise
 
     def insert_fact_with_history(self, table_name: str, data: List[Dict[str, Any]]):
@@ -232,11 +229,9 @@ class WarehouseDBClient:
             
         except Exception as e:
             logger.exception(f" Failed to upsert {table_name}: {e}")
-            try:
-                self.conn.run("ROLLBACK")
-            except:
-                pass
+            self.conn.run("ROLLBACK")
             raise
+
 
     def close(self):
         if self.conn:
