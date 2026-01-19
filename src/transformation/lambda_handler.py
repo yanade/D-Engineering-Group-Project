@@ -31,7 +31,16 @@ def lambda_handler(event, context):
             raise ValueError("No S3 object key found in event")
 
     
-        table_name = raw_key.split("/")[0]
+        source_key = urllib.parse.unquote_plus(raw_key)
+
+        if source_key.startswith("checkpoint/"):
+            logger.info (f"Skipping checkpoint file{source_key}")
+            return {
+                "statusCode": 200,
+                "body": json.dumps({"status": "skipped", "reason": "checkpoint", "key":source_key}),
+            }
+    
+        table_name = source_key.split("/")[0]
         logger.info(f"Detected table '{table_name}' from S3 key '{raw_key}'")
 
         service = TransformService(

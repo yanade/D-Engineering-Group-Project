@@ -13,7 +13,7 @@ class S3TransformationClient:
     def __init__(self, bucket: str):
         self.bucket = bucket
         self.s3 = boto3.client("s3")
-        logger.info(f"Initialising S3 claas . Raw data:  {self.bucket}")
+        logger.info(f"Initialising S3 client. Raw data:  {self.bucket}")
 
     def read_json(self, key: str):
         logger.info(f"Reading raw JSON from s3://{self.bucket}/{key}")
