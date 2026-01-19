@@ -40,23 +40,6 @@ class FakeBotoS3:
         return {"ResponseMetadata": {"HTTPStatusCode": 200}}
 
 
-# def test_read_table_reads_json_into_dataframe(monkeypatch):
-#     fake_s3 = FakeBotoS3()
-
-#     # Seed "currency.json"
-#     payload = [{"currency_id": 1, "currency_code": "GBP"}]
-#     fake_s3.objects[("landing", "currency.json")] = json.dumps(payload).encode("utf-8")
-
-#     # Patch boto3.client inside the module where S3TransformationClient is defined
-#     import transformation.s3_client as s3_mod
-#     monkeypatch.setattr(s3_mod.boto3, "client", lambda service: fake_s3)
-
-#     client = S3TransformationClient(bucket="landing")
-#     df = client.read_table("currency")
-
-#     assert isinstance(df, pd.DataFrame)
-#     assert list(df.columns) == ["currency_id", "currency_code"]
-#     assert df.iloc[0]["currency_code"] == "GBP"
 
 
 def test_write_parquet_puts_object(monkeypatch):
