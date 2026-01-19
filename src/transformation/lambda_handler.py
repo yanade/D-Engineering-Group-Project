@@ -2,6 +2,7 @@ import os
 import json
 import logging
 from transformation.transform_service import TransformService
+import urllib.parse
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
