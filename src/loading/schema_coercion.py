@@ -31,10 +31,11 @@ class SchemaCoercer:
     """
 
     def __init__(self, db: Any):
-      
+
         self.db = db
 
-    def coerce_df(self, table: str, df: pd.DataFrame, text_default: str = "Unknown") -> pd.DataFrame:
+    def coerce_df(self, table: str, df: pd.DataFrame,
+                  text_default: str = "Unknown") -> pd.DataFrame:
         """
         Main entry point. Returns a coerced copy (or same df mutated).
         """
@@ -63,14 +64,18 @@ class SchemaCoercer:
         # Step 4: coerce only columns that exist in BOTH df and schema
         for col in df.columns:
             if col not in schema:
-                logger.debug("Coercion: table=%s df_col=%s not in DB schema -> skip", table, col)
+                logger.debug(
+                    "Coercion: table=%s df_col=%s not in DB schema -> skip",
+                    table,
+                    col)
                 continue
 
             data_type, is_nullable = schema[col]
 
             # TEXT-like
             if data_type in ("text", "character varying", "character"):
-                df[col] = self._coerce_text_col(df[col], is_nullable, text_default)
+                df[col] = self._coerce_text_col(
+                    df[col], is_nullable, text_default)
                 continue
 
             # INTEGER-like
@@ -80,7 +85,8 @@ class SchemaCoercer:
 
             # NUMERIC / FLOAT-like
             if data_type in ("numeric", "decimal", "real", "double precision"):
-                df[col] = self._coerce_numeric_col(df[col], table, col, data_type)
+                df[col] = self._coerce_numeric_col(
+                    df[col], table, col, data_type)
                 continue
 
             # BOOLEAN
@@ -99,8 +105,12 @@ class SchemaCoercer:
                 continue
 
             # TIMESTAMP
-            if data_type in ("timestamp without time zone", "timestamp with time zone", "timestamp"):
-                df[col] = self._coerce_timestamp_col(df[col], table, col, data_type)
+            if data_type in (
+                "timestamp without time zone",
+                "timestamp with time zone",
+                    "timestamp"):
+                df[col] = self._coerce_timestamp_col(
+                    df[col], table, col, data_type)
                 continue
 
             # UUID
@@ -109,14 +119,16 @@ class SchemaCoercer:
                 continue
 
             # Unknown/custom types: only make sure missing -> None
-            logger.debug("Coercion: table=%s col=%s type=%s (unhandled) -> leave as-is", table, col, data_type)
+            logger.debug(
+                "Coercion: table=%s col=%s type=%s (unhandled) -> leave as-is",
+                table,
+                col,
+                data_type)
             df[col] = df[col].where(pd.notnull(df[col]), None)
 
         return df
 
-
     # Schema loading
-
 
     def _load_schema(self, table: str) -> Dict[str, Tuple[str, str]]:
         """
@@ -130,11 +142,13 @@ class SchemaCoercer:
         rows = self.db.fetchall(schema_sql, (table,))
         return {r[0]: (r[1], r[2]) for r in rows}
 
- 
     # Helpers (type coercion)
- 
 
-    def _coerce_text_col(self, s: pd.Series, is_nullable: str, text_default: str) -> pd.Series:
+    def _coerce_text_col(
+            self,
+            s: pd.Series,
+            is_nullable: str,
+            text_default: str) -> pd.Series:
         """
         Convert values to strings, keep None as None.
         If NOT NULL, fill missing with text_default (BI-friendly).
@@ -165,13 +179,21 @@ class SchemaCoercer:
         invalid_mask = num.isna() & s.notna()
         invalid_count = int(invalid_mask.sum())
         if invalid_count > 0:
-            logger.warning("Coercion int: table=%s col=%s invalid_values=%s -> set to NULL", table, col, invalid_count)
+            logger.warning(
+                "Coercion int: table=%s col=%s invalid_values=%s -> set to NULL",
+                table,
+                col,
+                invalid_count)
 
         # non-integers: numeric but not whole number
         non_int_mask = num.notna() & (num % 1 != 0)
         non_int_count = int(non_int_mask.sum())
         if non_int_count > 0:
-            logger.warning("Coercion int: table=%s col=%s non_integer_values=%s -> set to NULL", table, col, non_int_count)
+            logger.warning(
+                "Coercion int: table=%s col=%s non_integer_values=%s -> set to NULL",
+                table,
+                col,
+                non_int_count)
             num[non_int_mask] = pd.NA
 
         # pandas nullable int, then convert <NA> to None
@@ -179,7 +201,12 @@ class SchemaCoercer:
         out = out.where(pd.notnull(out), None)
         return out
 
-    def _coerce_numeric_col(self, s: pd.Series, table: str, col: str, data_type: str) -> pd.Series:
+    def _coerce_numeric_col(
+            self,
+            s: pd.Series,
+            table: str,
+            col: str,
+            data_type: str) -> pd.Series:
         """
         Coerce to Decimal for numeric stability.
         Invalid -> NULL.
@@ -211,7 +238,11 @@ class SchemaCoercer:
 
         return out
 
-    def _coerce_bool_col(self, s: pd.Series, table: str, col: str) -> pd.Series:
+    def _coerce_bool_col(
+            self,
+            s: pd.Series,
+            table: str,
+            col: str) -> pd.Series:
         """
         Coerce to bool:
         Accepts: true/false, t/f, 1/0, yes/no, y/n
@@ -253,11 +284,19 @@ class SchemaCoercer:
         new_non_null = int(pd.Series(out).notna().sum())
         invalid_to_null = max(0, original_non_null - new_non_null)
         if invalid_to_null > 0:
-            logger.warning("Coercion bool: table=%s col=%s invalid_to_null=%s", table, col, invalid_to_null)
+            logger.warning(
+                "Coercion bool: table=%s col=%s invalid_to_null=%s",
+                table,
+                col,
+                invalid_to_null)
 
         return out
 
-    def _coerce_date_col(self, s: pd.Series, table: str, col: str) -> pd.Series:
+    def _coerce_date_col(
+            self,
+            s: pd.Series,
+            table: str,
+            col: str) -> pd.Series:
         """
         Coerce to python date.
         Invalid -> NULL.
@@ -269,11 +308,19 @@ class SchemaCoercer:
         invalid_mask = dt.isna() & s.notna()
         invalid_count = int(invalid_mask.sum())
         if invalid_count > 0:
-            logger.warning("Coercion date: table=%s col=%s invalid_to_null=%s", table, col, invalid_count)
+            logger.warning(
+                "Coercion date: table=%s col=%s invalid_to_null=%s",
+                table,
+                col,
+                invalid_count)
 
         return out
 
-    def _coerce_time_col(self, s: pd.Series, table: str, col: str) -> pd.Series:
+    def _coerce_time_col(
+            self,
+            s: pd.Series,
+            table: str,
+            col: str) -> pd.Series:
         """
         Coerce to python time.
         - If series already contains datetime.time objects -> keep as is (only normalize None).
@@ -288,13 +335,14 @@ class SchemaCoercer:
 
         sample = non_null.iloc[0]
 
-       
         if isinstance(sample, dt.time):
             out = s.astype(object)
             out = out.where(pd.notnull(out), None)
             return out
 
-        if isinstance(sample, pd.Timestamp) or str(s.dtype).startswith("datetime64"):
+        if isinstance(
+                sample, pd.Timestamp) or str(
+                s.dtype).startswith("datetime64"):
             dt_vals = pd.to_datetime(s, errors="coerce")
             out = dt_vals.dt.time.astype(object)
             out = out.where(pd.notnull(out), None)
@@ -310,7 +358,6 @@ class SchemaCoercer:
                 )
             return out
 
-      
         dt_vals = pd.to_datetime(s, errors="coerce")
         out = dt_vals.dt.time.astype(object)
         out = out.where(pd.notnull(out), None)
@@ -327,8 +374,12 @@ class SchemaCoercer:
 
         return out
 
-
-    def _coerce_timestamp_col(self, s: pd.Series, table: str, col: str, data_type: str) -> pd.Series:
+    def _coerce_timestamp_col(
+            self,
+            s: pd.Series,
+            table: str,
+            col: str,
+            data_type: str) -> pd.Series:
         """
         Coerce to datetime.
         - timestamp with time zone -> UTC-aware

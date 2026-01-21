@@ -14,7 +14,8 @@ load_dotenv()
 class DatabaseClient:
     def __init__(self):
         logger.info("Initializing DatabaseClient...")
-        # Check if running locally (with .env) or in Lambda (with Secrets Manager)
+        # Check if running locally (with .env) or in Lambda (with Secrets
+        # Manager)
         if os.path.exists(".env") or all(
             [
                 os.getenv("DB_HOST"),
@@ -34,7 +35,8 @@ class DatabaseClient:
             # Lambda environment - use Secrets Manager
             secret_arn = os.getenv("DB_SECRET_ARN")
             if not secret_arn:
-                raise ValueError("DB_SECRET_ARN environment variable is required in Lambda")
+                raise ValueError(
+                    "DB_SECRET_ARN environment variable is required in Lambda")
             client = boto3.client("secretsmanager")
             response = client.get_secret_value(SecretId=secret_arn)
             secret = json.loads(response["SecretString"])
@@ -45,9 +47,14 @@ class DatabaseClient:
             self.port = int(secret.get("port", 5432))
             logger.info("Using Secrets Manager for DB connection")
         logger.info("Loaded DB env variables")
-        if not all([self.host, self.database, self.user, self.password, self.port]):
+        if not all([self.host,
+                    self.database,
+                    self.user,
+                    self.password,
+                    self.port]):
             logger.error("Missing required DB environment variables!")
-            raise ValueError("One or more database environment variables are missing.")
+            raise ValueError(
+                "One or more database environment variables are missing.")
         try:
             self.conn = Connection(
                 user=self.user,
@@ -70,21 +77,24 @@ class DatabaseClient:
                 rows = self.conn.run(sql)
             column_names = [col["name"] for col in self.conn.columns]
             result = [dict(zip(column_names, row)) for row in rows]
-            logger.info(f"SQL executed successfully. Returned {len(result)} rows.")
+            logger.info(
+                f"SQL executed successfully. Returned {
+                    len(result)} rows.")
             return result
         except Exception as e:
             logger.exception(f"Error executing SQL: {sql}, {e}")
             raise
 
     def fetch_preview(self, table_name: str, limit: int = 10):
-        logger.info(f"Fetching preview from table '{table_name}' (limit={limit})")
+        logger.info(
+            f"Fetching preview from table '{table_name}' (limit={limit})")
         if not table_name.isidentifier():
             raise ValueError(f"Unsafe table name: {table_name}")
         sql = f"SELECT * FROM {table_name} LIMIT :limit"
         rows = self.run(sql, {"limit": limit})
         if not rows:
             return {"columns": [], "rows": []}
-        return {"columns":list(rows[0].keys()), "rows": rows}
+        return {"columns": list(rows[0].keys()), "rows": rows}
 
     def list_tables(self):
         """
@@ -124,13 +134,15 @@ class DatabaseClient:
         try:
 
             rows = self.run(sql, {"table_name": table_name})
-            # expected format output [{"column_name": "staff_id", "data_type": "integer"}]
+            # expected format output [{"column_name": "staff_id", "data_type":
+            # "integer"}]
 
             logger.info(f"Columns for table '{table_name}': {rows}")
             return rows
 
         except Exception as e:
-            logger.exception(f"Failed to get columns for table '{table_name}', {e}")
+            logger.exception(
+                f"Failed to get columns for table '{table_name}', {e}")
             raise
 
     def infer_timestamp_column(self, table_name: str):
@@ -141,8 +153,10 @@ class DatabaseClient:
         try:
             columns = self.get_columns(table_name)
 
-            timestamp_candidates = [col["column_name"] for col in columns if "timestamp" in col["data_type"].lower()]
-            date_candidates = [col["column_name"] for col in columns if "date" in col["data_type"].lower()]
+            timestamp_candidates = [
+                col["column_name"] for col in columns if "timestamp" in col["data_type"].lower()]
+            date_candidates = [col["column_name"]
+                               for col in columns if "date" in col["data_type"].lower()]
             preferred_names = [
                 "last_updated",
                 "updated_at",
@@ -153,11 +167,13 @@ class DatabaseClient:
             for pref in preferred_names:
                 for candidate in timestamp_candidates:
                     if candidate.lower() == pref:
-                        logger.info(f"[{table_name}] Using preferred timestamp column: {candidate}")
+                        logger.info(
+                            f"[{table_name}] Using preferred timestamp column: {candidate}")
                         return candidate
 
             if timestamp_candidates:
-                logger.info(f"[{table_name}] Using first timestamp column: {timestamp_candidates[0]}")
+                logger.info(
+                    f"[{table_name}] Using first timestamp column: {timestamp_candidates[0]}")
                 return timestamp_candidates[0]
 
             if date_candidates:
@@ -170,7 +186,8 @@ class DatabaseClient:
             logger.warning(f"[{table_name}] No timestamp/date columns found.")
             return None
         except Exception as e:
-            logger.exception(f"Failed to infer timestamp column for table '{table_name}','{e}'")
+            logger.exception(
+                f"Failed to infer timestamp column for table '{table_name}','{e}'")
             raise
 
     def fetch_changes(self, table_name: str, since: datetime | None = None):
@@ -178,7 +195,8 @@ class DatabaseClient:
         Fetches new or updated rows from the table since the given checkpoint timestamp.
         """
 
-        logger.info(f"Fetching incremental data from '{table_name}' since '{since}'")
+        logger.info(
+            f"Fetching incremental data from '{table_name}' since '{since}'")
 
         if not table_name.isidentifier():
             raise ValueError(f"Unsafe table name: {table_name}")
@@ -186,11 +204,13 @@ class DatabaseClient:
         timestamp_col = self.infer_timestamp_column(table_name)
 
         if timestamp_col is None:
-            logger.warning(f"[{table_name}] No timestamp column found → FULL table ingestion.")
+            logger.warning(
+                f"[{table_name}] No timestamp column found → FULL table ingestion.")
             return self.run(f"SELECT * FROM {table_name};")
 
         if since is None:
-            logger.info(f"[{table_name}] No checkpoint found → FULL table ingestion.")
+            logger.info(
+                f"[{table_name}] No checkpoint found → FULL table ingestion.")
             return self.run(f"SELECT * FROM {table_name};")
 
         sql = f"""
@@ -202,11 +222,14 @@ class DatabaseClient:
 
         try:
             rows = self.run(sql, {"since": since})
-            logger.info(f"Fetched {len(rows)} incremental rows from '{table_name}'")
+            logger.info(
+                f"Fetched {
+                    len(rows)} incremental rows from '{table_name}'")
             return rows
 
         except Exception as e:
-            logger.exception(f"Failed to fetch incremental data from table '{table_name}','{e}'")
+            logger.exception(
+                f"Failed to fetch incremental data from table '{table_name}','{e}'")
             raise
 
     def close(self):
@@ -215,4 +238,3 @@ class DatabaseClient:
             logger.info("Database connection closed.")
         except Exception as e:
             logger.warning(f"Failed to close database connection cleanly: {e}")
-

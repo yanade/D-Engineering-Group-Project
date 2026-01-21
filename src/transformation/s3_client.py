@@ -9,6 +9,7 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
 class S3TransformationClient:
     def __init__(self, bucket: str):
         self.bucket = bucket
@@ -42,12 +43,9 @@ class S3TransformationClient:
             raise ValueError(f"No rows found for table '{table_name}'")
         return pd.DataFrame(rows)
 
-   
-
-
     def write_parquet(self, table_name: str, df: pd.DataFrame):
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        run_id= uuid4().hex
+        run_id = uuid4().hex
         key = f"{table_name}/processed_{timestamp}_{run_id}.parquet"
         # key = f"{table_name}/latest.parquet"
         buffer = BytesIO()

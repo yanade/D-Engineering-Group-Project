@@ -20,14 +20,14 @@ logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 
 class LoadService:
-   
+
     # Loading Zone:
     # - Discover tables from processed S3 (dim_* and fact_*)
     # - dim_*  => snapshot load (TRUNCATE + INSERT)
     # - fact_* => append only NEW rows (watermark filter) + checkpoint in S3
 
     # Checkpoints (in processed bucket):
-     
+
     def __init__(
         self,
         processed_bucket: str,
@@ -39,11 +39,11 @@ class LoadService:
         self.db = db
         self.checkpoints_prefix = checkpoints_prefix.rstrip("/")
         self.coercer = SchemaCoercer(db=self.db)
-        logger.info("Initialising LoadService with bucket=%s", processed_bucket)
-
+        logger.info(
+            "Initialising LoadService with bucket=%s",
+            processed_bucket)
 
     # Discovery + ordering
-    
 
     def _discover_tables_from_s3(self) -> List[str]:
         """
@@ -53,7 +53,9 @@ class LoadService:
         paginator = self.s3_client.s3.get_paginator("list_objects_v2")
         tables: List[str] = []
 
-        for page in paginator.paginate(Bucket=self.processed_bucket, Delimiter="/"):
+        for page in paginator.paginate(
+                Bucket=self.processed_bucket,
+                Delimiter="/"):
             for prefix in page.get("CommonPrefixes", []):
                 name = prefix.get("Prefix", "").rstrip("/")
                 if not name:
@@ -84,9 +86,7 @@ class LoadService:
     def _is_fact(self, table: str) -> bool:
         return table.startswith("fact_")
 
-   
     # Public API
-  
 
     def load_all_tables(self) -> Dict[str, Any]:
         tables = self._order_tables(self._discover_tables_from_s3())
@@ -104,7 +104,10 @@ class LoadService:
         parquet_keys = self.s3_client.list_parquet_keys(table)
         if not parquet_keys:
             logger.warning("Skip table=%s (no parquet).", table)
-            return {"table": table, "status": "skipped", "reason": "no_parquet"}
+            return {
+                "table": table,
+                "status": "skipped",
+                "reason": "no_parquet"}
 
         latest_key = parquet_keys[-1]
 
@@ -115,17 +118,35 @@ class LoadService:
             ckpt = self._read_checkpoint(table)
 
         if self._is_fact(table) and ckpt.get("last_loaded_key") == latest_key:
-            logger.info("Skip fact table=%s (already loaded key=%s).", table, latest_key)
-            return {"table": table, "status": "skipped", "reason": "already_loaded", "latest_key": latest_key}
+            logger.info(
+                "Skip fact table=%s (already loaded key=%s).",
+                table,
+                latest_key)
+            return {
+                "table": table,
+                "status": "skipped",
+                "reason": "already_loaded",
+                "latest_key": latest_key}
 
         # 3) Read latest parquet
         df = self.s3_client.read_parquet_to_df(latest_key)
         if df is None or df.empty:
-            logger.warning("Skip table=%s (empty parquet). key=%s", table, latest_key)
-            # checkpoint key so we don't reprocess the same empty file repeatedly
+            logger.warning(
+                "Skip table=%s (empty parquet). key=%s",
+                table,
+                latest_key)
+            # checkpoint key so we don't reprocess the same empty file
+            # repeatedly
             if self._is_fact(table):
-                self._write_checkpoint(table, last_loaded_key=latest_key, last_loaded_ts=ckpt.get("last_loaded_ts"))
-            return {"table": table, "status": "skipped", "reason": "no_data", "latest_key": latest_key}
+                self._write_checkpoint(
+                    table,
+                    last_loaded_key=latest_key,
+                    last_loaded_ts=ckpt.get("last_loaded_ts"))
+            return {
+                "table": table,
+                "status": "skipped",
+                "reason": "no_data",
+                "latest_key": latest_key}
 
         # Ensure NULLs handled (NaN/NaT -> None)
         df = df.where(pd.notnull(df), None)
@@ -134,14 +155,22 @@ class LoadService:
         self.create_table_if_not_exists(table, df)
         df = self.coercer.coerce_df(table=table, df=df, text_default="Unknown")
 
-
         # 5) dim snapshot
         if self._should_truncate(table):
             self.truncate_table(table)
             inserted = self._insert_df(table, df)
-            # dims don't need watermark; keep checkpoint optional (not required)
-            logger.info("Loaded dim snapshot table=%s rows=%s", table, inserted)
-            return {"table": table, "status": "loaded", "mode": "snapshot", "rows": inserted, "latest_key": latest_key}
+            # dims don't need watermark; keep checkpoint optional (not
+            # required)
+            logger.info(
+                "Loaded dim snapshot table=%s rows=%s",
+                table,
+                inserted)
+            return {
+                "table": table,
+                "status": "loaded",
+                "mode": "snapshot",
+                "rows": inserted,
+                "latest_key": latest_key}
 
         # 6) fact delta: watermark filter (append only NEW rows)
         df_to_insert = df
@@ -154,8 +183,11 @@ class LoadService:
             df_to_insert = df_to_insert.loc[wm_series > last_dt].copy()
             logger.info(
                 "Filtered NEW rows for fact table=%s watermark=%s > %s: %s -> %s",
-                table, wm_name, last_ts, before, len(df_to_insert)
-            )
+                table,
+                wm_name,
+                last_ts,
+                before,
+                len(df_to_insert))
 
         inserted = self._insert_df(table, df_to_insert)
 
@@ -167,7 +199,10 @@ class LoadService:
         else:
             new_last_ts = ckpt.get("last_loaded_ts")
 
-        self._write_checkpoint(table, last_loaded_key=latest_key, last_loaded_ts=new_last_ts)
+        self._write_checkpoint(
+            table,
+            last_loaded_key=latest_key,
+            last_loaded_ts=new_last_ts)
 
         mode = "delta"
         if wm_name is None:
@@ -182,9 +217,7 @@ class LoadService:
             "watermark": wm_name,
         }
 
-   
     # DB helpers (MVP)
-   
 
     def create_table_if_not_exists(self, table: str, df: pd.DataFrame) -> None:
 
@@ -193,10 +226,9 @@ class LoadService:
             raise KeyError(
                 f"No typed DDL found for table={table}. "
                 "Add it to loading/sql.py CREATE_TABLE_SQL.")
-    
+
         logger.info("Ensuring table exists (typed DDL): %s", table)
         self.db.execute(ddl)
-
 
     def truncate_table(self, table: str) -> None:
         truncate_sql = f'TRUNCATE TABLE "{table}";'
@@ -214,19 +246,25 @@ class LoadService:
         # 1) Get DB column order (source of truth)
         db_cols = self._get_db_columns(table)
         if not db_cols:
-            raise ValueError(f"Table {table} has no columns in information_schema (unexpected)")
+            raise ValueError(
+                f"Table {table} has no columns in information_schema (unexpected)")
 
-        # 2) Keep only intersection, preserving DB order (important for BI consistency)
+        # 2) Keep only intersection, preserving DB order (important for BI
+        # consistency)
         insert_cols = [c for c in db_cols if c in df.columns]
 
         if not insert_cols:
             raise ValueError(
-                f"No matching columns between df and DB table. table={table} df_cols={list(df.columns)}"
-            )
+                f"No matching columns between df and DB table. table={table} df_cols={
+                    list(
+                        df.columns)}")
 
         dropped = [c for c in df.columns if c not in insert_cols]
         if dropped:
-            logger.warning("Insert filtering: table=%s dropping df columns not in DB schema: %s", table, dropped)
+            logger.warning(
+                "Insert filtering: table=%s dropping df columns not in DB schema: %s",
+                table,
+                dropped)
 
         # 3) Slice df to insert columns (correct order)
         df2 = df[insert_cols].copy()
@@ -238,7 +276,8 @@ class LoadService:
 
         # 5) Build params (convert pandas missing to None just in case)
         df2 = df2.where(pd.notnull(df2), None)
-        params: List[Sequence[Any]] = [tuple(row) for row in df2.itertuples(index=False, name=None)]
+        params: List[Sequence[Any]] = [
+            tuple(row) for row in df2.itertuples(index=False, name=None)]
 
         self.db.executemany(sql, params, chunk_size=1000)
 
@@ -260,12 +299,11 @@ class LoadService:
         rows = self.db.fetchall(sql, (table,))
         return [r[0] for r in rows]
 
-    
-   
     # Watermark detection
-   
 
-    def _detect_watermark(self, df: pd.DataFrame) -> Tuple[Optional[str], Optional[pd.Series]]:
+    def _detect_watermark(self,
+                          df: pd.DataFrame) -> Tuple[Optional[str],
+                                                     Optional[pd.Series]]:
         """
         Detect a watermark datetime Series (UTC) for filtering NEW fact rows.
         Supports your TransformService outputs (best case: last_updated_date + last_updated_time).
@@ -274,7 +312,8 @@ class LoadService:
 
         # Best: last_updated_date + last_updated_time
         if {"last_updated_date", "last_updated_time"}.issubset(cols):
-            dt_str = df["last_updated_date"].astype(str) + " " + df["last_updated_time"].astype(str)
+            dt_str = df["last_updated_date"].astype(
+                str) + " " + df["last_updated_time"].astype(str)
             wm = pd.to_datetime(dt_str, errors="coerce", utc=True)
             if wm.notna().any():
                 return "last_updated_date+time", wm
@@ -312,9 +351,7 @@ class LoadService:
             ts = ts.replace("Z", "+00:00")
         return datetime.fromisoformat(ts).astimezone(timezone.utc)
 
- 
     # Checkpoints in S3 (facts)
- 
 
     def _checkpoint_key(self, table: str) -> str:
         return f"{self.checkpoints_prefix}/{table}.json"
@@ -326,7 +363,8 @@ class LoadService:
         """
         key = self._checkpoint_key(table)
         try:
-            obj = self.s3_client.s3.get_object(Bucket=self.processed_bucket, Key=key)
+            obj = self.s3_client.s3.get_object(
+                Bucket=self.processed_bucket, Key=key)
             data = obj["Body"].read().decode("utf-8")
             payload = json.loads(data)
             return payload if isinstance(payload, dict) else {}
@@ -334,15 +372,24 @@ class LoadService:
             code = e.response.get("Error", {}).get("Code")
             if code in ("NoSuchKey", "404"):
                 return {}
-            logger.exception("Failed to read checkpoint table=%s key=%s", table, key)
+            logger.exception(
+                "Failed to read checkpoint table=%s key=%s", table, key)
             raise
 
-    def _write_checkpoint(self, table: str, last_loaded_key: str, last_loaded_ts: Optional[str]) -> None:
+    def _write_checkpoint(
+            self,
+            table: str,
+            last_loaded_key: str,
+            last_loaded_ts: Optional[str]) -> None:
         key = self._checkpoint_key(table)
         payload = {
             "last_loaded_key": last_loaded_key,
             "last_loaded_ts": last_loaded_ts,
-            "updated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+            "updated_at": datetime.now(
+                timezone.utc).replace(
+                microsecond=0).isoformat().replace(
+                "+00:00",
+                "Z"),
         }
         self.s3_client.s3.put_object(
             Bucket=self.processed_bucket,
@@ -350,4 +397,5 @@ class LoadService:
             Body=json.dumps(payload).encode("utf-8"),
             ContentType="application/json",
         )
-        logger.info("Wrote checkpoint table=%s key=%s ts=%s", table, last_loaded_key, last_loaded_ts)
+        logger.info("Wrote checkpoint table=%s key=%s ts=%s",
+                    table, last_loaded_key, last_loaded_ts)

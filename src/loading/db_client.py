@@ -22,7 +22,8 @@ class WarehouseDBClient(AbstractContextManager):
         self.port = int(cfg.get("port", 5432))
         self.database = cfg["database"]
 
-        # Support BOTH key names, because some secrets use "user", some use "username"
+        # Support BOTH key names, because some secrets use "user", some use
+        # "username"
         self.user = cfg.get("user") or cfg.get("username")
         self.password = cfg["password"]
 
@@ -33,7 +34,9 @@ class WarehouseDBClient(AbstractContextManager):
             "password": self.password,
         }.items() if not v]
         if missing:
-            raise ValueError(f"DW secret is missing required values: {', '.join(missing)}")
+            raise ValueError(
+                f"DW secret is missing required values: {
+                    ', '.join(missing)}")
 
         self.conn = None
         logger.info(
@@ -62,7 +65,8 @@ class WarehouseDBClient(AbstractContextManager):
 
         # Fail fast if essential keys are missing
         required_any_user = bool(cfg.get("user") or cfg.get("username"))
-        if not cfg.get("host") or not cfg.get("database") or not cfg.get("password") or not required_any_user:
+        if not cfg.get("host") or not cfg.get("database") or not cfg.get(
+                "password") or not required_any_user:
             raise ValueError(
                 "DW secret JSON must include: host, database, password, and user or username"
             )
@@ -90,7 +94,9 @@ class WarehouseDBClient(AbstractContextManager):
                 logger.info("Transaction committed")
             else:
                 self.conn.rollback()
-                logger.info("Transaction rolled back due to exception: %s", exc_value)
+                logger.info(
+                    "Transaction rolled back due to exception: %s",
+                    exc_value)
         finally:
             try:
                 self.conn.close()
@@ -101,9 +107,11 @@ class WarehouseDBClient(AbstractContextManager):
 
     def _require_connection(self) -> None:
         if self.conn is None:
-            raise RuntimeError("Database connection is not established. Use 'with' context manager.")
+            raise RuntimeError(
+                "Database connection is not established. Use 'with' context manager.")
 
-    def execute(self, sql: str, params: Optional[Sequence[Any]] = None) -> None:
+    def execute(self, sql: str,
+                params: Optional[Sequence[Any]] = None) -> None:
         # Execute a single statement.
         # Uses positional params (%s placeholders in SQL).
         self._require_connection()
@@ -117,7 +125,10 @@ class WarehouseDBClient(AbstractContextManager):
         finally:
             cur.close()
 
-    def executemany(self, sql: str, param_seq: List[Sequence[Any]], chunk_size: int = 1000) -> None:
+    def executemany(self,
+                    sql: str,
+                    param_seq: List[Sequence[Any]],
+                    chunk_size: int = 1000) -> None:
 
         # Execute a statement multiple times with different params.
         # Uses positional params (%s placeholders in SQL).
@@ -126,10 +137,14 @@ class WarehouseDBClient(AbstractContextManager):
         self._require_connection()
 
         if not param_seq:
-            logger.info("No parameters provided for executemany; skipping execution.")
+            logger.info(
+                "No parameters provided for executemany; skipping execution.")
             return
 
-        logger.info("Executing SQL many times: %s with %s param sets", sql, len(param_seq))
+        logger.info(
+            "Executing SQL many times: %s with %s param sets",
+            sql,
+            len(param_seq))
 
         cur = self.conn.cursor()
         try:
@@ -140,12 +155,16 @@ class WarehouseDBClient(AbstractContextManager):
         finally:
             cur.close()
 
-    def fetchall(self, sql: str, params: Optional[Sequence[Any]] = None) -> List[Tuple]:
+    def fetchall(self, sql: str,
+                 params: Optional[Sequence[Any]] = None) -> List[Tuple]:
 
         # Execute a query and fetch all results.
         # Uses positional params (%s placeholders in SQL).
         self._require_connection()
-        logger.info("Fetching all results for SQL: %s with params=%s", sql, params)
+        logger.info(
+            "Fetching all results for SQL: %s with params=%s",
+            sql,
+            params)
 
         cur = self.conn.cursor()
         try:
