@@ -2,7 +2,7 @@
 
 import logging
 from decimal import Decimal, InvalidOperation
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 import pandas as pd
 

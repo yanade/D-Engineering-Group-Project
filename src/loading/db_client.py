@@ -9,16 +9,15 @@ import pg8000.dbapi
 logger = logging.getLogger(__name__)
 logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
+
 class WarehouseDBClient(AbstractContextManager):
 
     # Warehouse Postgres client (Loading Zone).
     # - Uses pg8000.dbapi for standard cursor/commit semantics
     # - Supports efficient cursor.executemany()
 
-
     def __init__(self):
         cfg = self._load_dw_config_from_secrets_manager()
-
         self.host = cfg["host"]
         self.port = int(cfg.get("port", 5432))
         self.database = cfg["database"]
@@ -46,7 +45,6 @@ class WarehouseDBClient(AbstractContextManager):
 
         #   Load DW credentials from AWS Secrets Manager.
 
-       
         secret_id = os.getenv("DW_SECRET_ARN")
         if not secret_id:
             raise ValueError("Missing required env var: DW_SECRET_ARN")
@@ -69,7 +67,7 @@ class WarehouseDBClient(AbstractContextManager):
                 "DW secret JSON must include: host, database, password, and user or username"
             )
 
-        return cfg    
+        return cfg
 
     def __enter__(self) -> "WarehouseDBClient":
         self.conn = pg8000.dbapi.connect(
@@ -82,7 +80,7 @@ class WarehouseDBClient(AbstractContextManager):
         self.conn.autocommit = False
         logger.info("Database connection established")
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         if self.conn is None:
             return False
@@ -106,7 +104,6 @@ class WarehouseDBClient(AbstractContextManager):
             raise RuntimeError("Database connection is not established. Use 'with' context manager.")
 
     def execute(self, sql: str, params: Optional[Sequence[Any]] = None) -> None:
-        
         # Execute a single statement.
         # Uses positional params (%s placeholders in SQL).
         self._require_connection()
@@ -121,19 +118,19 @@ class WarehouseDBClient(AbstractContextManager):
             cur.close()
 
     def executemany(self, sql: str, param_seq: List[Sequence[Any]], chunk_size: int = 1000) -> None:
-        
+
         # Execute a statement multiple times with different params.
         # Uses positional params (%s placeholders in SQL).
         # Splits param_seq into chunks to avoid very large single executions.
 
-        self._require_connection() 
+        self._require_connection()
 
         if not param_seq:
             logger.info("No parameters provided for executemany; skipping execution.")
             return
-        
+
         logger.info("Executing SQL many times: %s with %s param sets", sql, len(param_seq))
-        
+
         cur = self.conn.cursor()
         try:
             for i in range(0, len(param_seq), chunk_size):
@@ -144,7 +141,7 @@ class WarehouseDBClient(AbstractContextManager):
             cur.close()
 
     def fetchall(self, sql: str, params: Optional[Sequence[Any]] = None) -> List[Tuple]:
-        
+
         # Execute a query and fetch all results.
         # Uses positional params (%s placeholders in SQL).
         self._require_connection()
@@ -160,4 +157,4 @@ class WarehouseDBClient(AbstractContextManager):
             logger.info("Fetched %s rows", len(results))
             return results
         finally:
-            cur.close() 
+            cur.close()

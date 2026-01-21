@@ -2,10 +2,12 @@ import json
 import logging
 import os
 import sys
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "vendor"))
 
 from loading.db_client import WarehouseDBClient
 from loading.load_service import LoadService
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
@@ -19,13 +21,13 @@ def _get_env(name: str) -> str:
 
 
 def lambda_handler(event, context):
-    
+
     # Loading Lambda entry point.
 
     # Expected env vars:
     #   - PROCESSED_BUCKET_NAME: S3 bucket with processed parquet outputs
 
-    
+
     logger.info("Load Lambda triggered. event=%s", json.dumps(event))
 
     processed_bucket = _get_env("PROCESSED_BUCKET_NAME")
@@ -39,8 +41,8 @@ def lambda_handler(event, context):
                 checkpoints_prefix=checkpoints_prefix,
             )
 
-            target_table = None
-            
+
+
             target_table = event.get("table") if isinstance(event, dict) else None
 
             if target_table:

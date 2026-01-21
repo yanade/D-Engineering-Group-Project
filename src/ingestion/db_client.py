@@ -84,7 +84,7 @@ class DatabaseClient:
         rows = self.run(sql, {"limit": limit})
         if not rows:
             return {"columns": [], "rows": []}
-        return {"columns": list(rows[0].keys()), "rows": rows}
+        return {"columns":list(rows[0].keys()), "rows": rows}
 
     def list_tables(self):
         """
