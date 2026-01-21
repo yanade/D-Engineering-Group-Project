@@ -25,10 +25,7 @@ resource "aws_lambda_function" "ingestion" {
   layers = [aws_lambda_layer_version.dependencies.arn]
 
 
-#  vpc_config {
-#   subnet_ids         = [aws_subnet.private_a.id,aws_subnet.private_b.id]
-#   security_group_ids = [aws_security_group.lambda_sg.id]
-# }
+
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory_size
   

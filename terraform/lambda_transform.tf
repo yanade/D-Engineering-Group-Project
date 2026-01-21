@@ -30,10 +30,6 @@ resource "aws_lambda_function" "transform" {
   layers = ["arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python311:24"]
 
 
-#  vpc_config {
-#   subnet_ids         = [aws_subnet.private_a.id,aws_subnet.private_b.id]
-#   security_group_ids = [aws_security_group.lambda_sg.id]
-# }
   
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory_size
