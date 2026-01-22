@@ -13,7 +13,7 @@ resource "aws_iam_role" "lambda_exec" {
     }]
   })
 
-tags = {
+  tags = {
     Stage = "Lambda-Execution"
   }
 
@@ -35,20 +35,20 @@ resource "aws_iam_role_policy" "lambda_s3_permissions" {
     Statement = [
       # S3 permissions Landing zone (read + write for ingestion)
       {
-      Effect = "Allow"
-      Action = [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:ListBucket"
-      ]
-      Resource = [
-        aws_s3_bucket.landing_zone.arn,
-        "${aws_s3_bucket.landing_zone.arn}/*"
-      ]
-    },
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.landing_zone.arn,
+          "${aws_s3_bucket.landing_zone.arn}/*"
+        ]
+      },
 
-    # Processed zone (write for transform)
-    {
+      # Processed zone (write for transform)
+      {
         Effect = "Allow"
         Action = [
           "s3:PutObject",
@@ -83,10 +83,10 @@ resource "aws_iam_role_policy" "lambda_secrets_access" {
         Effect = "Allow"
         Action = ["secretsmanager:GetSecretValue",
         "secretsmanager:DescribeSecret"]
-        
+
         Resource = [
           data.aws_secretsmanager_secret.totesys_creds.arn,
-          data.aws_secretsmanager_secret.dw_creds.arn
+          aws_secretsmanager_secret.dw_creds.arn
         ]
       }
     ]

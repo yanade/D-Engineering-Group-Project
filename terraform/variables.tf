@@ -16,34 +16,34 @@ variable "aws_region" {
   default     = "eu-west-2"
 }
 
-# Totesys Database Credentials
-variable "totesys_db_host" {
-  description = "Totesys database host"
-  type        = string
-}
+# # Totesys Database Credentials
+# variable "totesys_db_host" {
+#   description = "Totesys database host"
+#   type        = string
+# }
 
-variable "totesys_db_name" {
-  description = "Totesys database name"
-  type        = string
-  default     = "totesys"
-}
+# variable "totesys_db_name" {
+#   description = "Totesys database name"
+#   type        = string
+#   default     = "totesys"
+# }
 
-variable "totesys_db_user" {
-  description = "Totesys database username"
-  type        = string
-}
+# variable "totesys_db_user" {
+#   description = "Totesys database username"
+#   type        = string
+# }
 
-variable "totesys_db_password" {
-  description = "Totesys database password"
-  type        = string
-  sensitive   = true
-}
+# variable "totesys_db_password" {
+#   description = "Totesys database password"
+#   type        = string
+#   sensitive   = true
+# }
 
-variable "totesys_db_port" {
-  description = "Totesys database port"
-  type        = number
-  default     = 5432
-}
+# variable "totesys_db_port" {
+#   description = "Totesys database port"
+#   type        = number
+#   default     = 5432
+# }
 
 # Alerting
 variable "alert_email" {
@@ -83,11 +83,11 @@ variable "dw_db_username" {
   type        = string
   default     = "warehouse_admin"
 }
-variable "dw_db_password" {
-  description = "Data warehouse database password"
-  type        = string
-  sensitive   = true
-}
+# variable "dw_db_password" {
+#   description = "Data warehouse database password"
+#   type        = string
+#   sensitive   = true
+# }
 variable "rds_instance_class" {
   description = "RDS instance type"
   type        = string
@@ -144,4 +144,9 @@ variable "availability_zones" {
   description = "Availability zones to use"
   type        = list(string)
   default     = ["eu-west-2a", "eu-west-2b"]
+}
+
+variable "dw_username" {
+  type        = string
+  description = "Username for the data warehouse (RDS) secret"
 }

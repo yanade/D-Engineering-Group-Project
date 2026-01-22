@@ -5,9 +5,9 @@ resource "random_id" "bucket_suffix" {
 
 # LANDING ZONE BUCKET ONLY (Week 1)
 resource "aws_s3_bucket" "landing_zone" {
-  bucket = "gamboge-landing-${var.environment}-${random_id.bucket_suffix.hex}"
-  force_destroy = true 
-  
+  bucket        = "gamboge-landing-${var.environment}-${random_id.bucket_suffix.hex}"
+  force_destroy = true
+
   tags = {
     Name        = "landing-zone"
     Environment = var.environment
@@ -35,7 +35,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "landing_zone" {
 # Block public access
 resource "aws_s3_bucket_public_access_block" "landing_zone" {
   bucket = aws_s3_bucket.landing_zone.id
-  
+
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -52,9 +52,9 @@ resource "random_id" "processed_bucket_suffix" {
 }
 
 resource "aws_s3_bucket" "processed_zone" {
-  bucket = "${var.project_name}-processed-${var.environment}-${random_id.processed_bucket_suffix.hex}"
+  bucket        = "${var.project_name}-processed-${var.environment}-${random_id.processed_bucket_suffix.hex}"
   force_destroy = true
-  
+
   tags = {
     Name        = "processed-zone"
     Environment = var.environment
@@ -79,7 +79,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "processed_zone" {
 }
 
 resource "aws_s3_bucket_public_access_block" "processed_zone" {
-  bucket = aws_s3_bucket.processed_zone.id
+  bucket                  = aws_s3_bucket.processed_zone.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true

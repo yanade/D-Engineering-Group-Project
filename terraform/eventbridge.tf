@@ -2,9 +2,9 @@
 resource "aws_cloudwatch_event_rule" "ingestion_schedule" {
   name        = "${var.project_name}-ingestion-schedule"
   description = "Run ingestion every 15 minutes"
-  
+
   schedule_expression = var.ingestion_schedule
-  
+
   tags = {
     Stage = "Week1-Ingestion"
   }

@@ -7,9 +7,10 @@ data "archive_file" "transform_lambda" {
   output_path = "${path.module}/../transform_lambda.zip"
 
   excludes = [
-    "__pycache__",
-    "*.pyc",
+    "**/__pycache__/**",
+    "**/*.pyc",
     "test_*.py",
+    "**/tests/**",
   ]
 }
 
@@ -25,12 +26,12 @@ resource "aws_lambda_function" "transform" {
   filename         = data.archive_file.transform_lambda.output_path
   source_code_hash = data.archive_file.transform_lambda.output_base64sha256
 
-   architectures = ["x86_64"]
+  architectures = ["x86_64"]
 
   layers = ["arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python311:24"]
 
 
-  
+
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory_size
 
@@ -44,15 +45,15 @@ resource "aws_lambda_function" "transform" {
   }
 
   tags = {
-    Name        = "${var.project_name}-transform-lambda"
-    Stage       = "Week2-Transform"
+    Name    = "${var.project_name}-transform-lambda"
+    Stage   = "Week2-Transform"
     Project = var.project_name
   }
 }
 
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "transform_logs" {
-  name              = "/aws/lambda/${aws_lambda_function.transform.function_name}"
+  name = "/aws/lambda/${aws_lambda_function.transform.function_name}"
   # retention_in_days = 7
 
   tags = {

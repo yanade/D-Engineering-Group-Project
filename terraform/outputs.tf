@@ -62,7 +62,7 @@ output "load_lambda_name" {
 
 output "dw_secret_arn" {
   description = "ARN of the data warehouse secret"
-  value       = data.aws_secretsmanager_secret.dw_creds.arn
+  value       = aws_secretsmanager_secret.dw_creds.arn
   sensitive   = true
 }
 
