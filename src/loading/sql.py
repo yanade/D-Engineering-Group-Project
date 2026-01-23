@@ -99,6 +99,8 @@ CREATE_TABLE_SQL = {
         agreed_delivery_location_id INTEGER NOT NULL,
         units_sold INTEGER NOT NULL,
         unit_price NUMERIC(10, 2) NOT NULL,
+        agreed_delivery_date DATE,
+        agreed_payment_date DATE,
         CONSTRAINT fk_sales_staff
             FOREIGN KEY (sales_staff_id)
             REFERENCES dim_staff(staff_id),

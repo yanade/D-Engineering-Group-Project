@@ -39,6 +39,7 @@ class LoadService:
         self.db = db
         self.checkpoints_prefix = checkpoints_prefix.rstrip("/")
         self.coercer = SchemaCoercer(db=self.db)
+
         logger.info(
             "Initialising LoadService with bucket=%s",
             processed_bucket)
@@ -85,6 +86,24 @@ class LoadService:
 
     def _is_fact(self, table: str) -> bool:
         return table.startswith("fact_")
+    
+    def _get_pk_column(self, table: str) -> str:
+        sql = """
+            SELECT kcu.column_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu
+            ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+            WHERE tc.constraint_type = 'PRIMARY KEY'
+            AND tc.table_schema = 'public'
+            AND tc.table_name = %s
+            ORDER BY kcu.ordinal_position;
+        """
+        rows = self.db.fetchall(sql, (table,))
+        if not rows:
+            raise ValueError(f"Cannot detect PK via information_schema for table={table}")
+        return rows[0][0]
+
 
     # Public API
 
@@ -157,20 +176,16 @@ class LoadService:
 
         # 5) dim snapshot
         if self._should_truncate(table):
-            self.truncate_table(table)
-            inserted = self._insert_df(table, df)
-            # dims don't need watermark; keep checkpoint optional (not
-            # required)
-            logger.info(
-                "Loaded dim snapshot table=%s rows=%s",
-                table,
-                inserted)
+            inserted = self._upsert_df_dim(table, df)
+            logger.info("Loaded dim snapshot (upsert) table=%s rows=%s", table, inserted)
             return {
                 "table": table,
                 "status": "loaded",
-                "mode": "snapshot",
+                "mode": "snapshot_upsert",
                 "rows": inserted,
-                "latest_key": latest_key}
+                "latest_key": latest_key,
+            }
+
 
         # 6) fact delta: watermark filter (append only NEW rows)
         df_to_insert = df
@@ -224,8 +239,7 @@ class LoadService:
         ddl = CREATE_TABLE_SQL.get(table)
         if not ddl:
             raise KeyError(
-                f"No typed DDL found for table={table}. "
-                "Add it to loading/sql.py CREATE_TABLE_SQL.")
+                f"No typed DDL found for table={table}. " "Add it to loading/sql.py CREATE_TABLE_SQL.")
 
         logger.info("Ensuring table exists (typed DDL): %s", table)
         self.db.execute(ddl)
@@ -255,9 +269,7 @@ class LoadService:
 
         if not insert_cols:
             raise ValueError(
-                f"No matching columns between df and DB table. table={table} df_cols={
-                    list(
-                        df.columns)}")
+                f"No matching columns between df and DB table. table={table} df_cols={list(df.columns)}")
 
         dropped = [c for c in df.columns if c not in insert_cols]
         if dropped:
@@ -288,6 +300,54 @@ class LoadService:
             insert_cols,
         )
         return len(params)
+    
+    def _upsert_df_dim(self, table: str, df: pd.DataFrame) -> int:
+        if df is None or df.empty:
+            return 0
+
+        db_cols = self._get_db_columns(table)
+        if not db_cols:
+            raise ValueError(f"Table {table} has no columns in information_schema (unexpected)")
+
+        pk_col = self._get_pk_column(table)
+
+        insert_cols = [c for c in db_cols if c in df.columns]
+        if pk_col not in insert_cols:
+            raise ValueError(f"Dim upsert requires PK column present. table={table} pk={pk_col}")
+
+        dropped = [c for c in df.columns if c not in insert_cols]
+        if dropped:
+            logger.warning("Upsert filtering: table=%s dropping df columns not in DB schema: %s", table, dropped)
+
+        df2 = df[insert_cols].copy()
+        df2 = df2.where(pd.notnull(df2), None)
+
+        col_list = ", ".join([f'"{c}"' for c in insert_cols])
+        placeholders = ", ".join(["%s"] * len(insert_cols))
+
+        update_cols = [c for c in insert_cols if c != pk_col]
+        if update_cols:
+            set_clause = ", ".join([f'"{c}" = EXCLUDED."{c}"' for c in update_cols])
+            sql = (
+                f'INSERT INTO "{table}" ({col_list}) VALUES ({placeholders}) '
+                f'ON CONFLICT ("{pk_col}") DO UPDATE SET {set_clause};'
+            )
+        else:
+            # теоретично: dim з однієї колонки (майже не буває)
+            sql = (
+                f'INSERT INTO "{table}" ({col_list}) VALUES ({placeholders}) '
+                f'ON CONFLICT ("{pk_col}") DO NOTHING;'
+            )
+
+        params: List[Sequence[Any]] = [
+            tuple(row) for row in df2.itertuples(index=False, name=None)
+        ]
+
+        self.db.executemany(sql, params, chunk_size=1000)
+
+        logger.info("Upserted %s rows into dim table=%s pk=%s cols=%s", len(params), table, pk_col, insert_cols)
+        return len(params)
+
 
     def _get_db_columns(self, table: str) -> List[str]:
         sql = """

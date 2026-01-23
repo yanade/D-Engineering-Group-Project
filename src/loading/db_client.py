@@ -35,8 +35,7 @@ class WarehouseDBClient(AbstractContextManager):
         }.items() if not v]
         if missing:
             raise ValueError(
-                f"DW secret is missing required values: {
-                    ', '.join(missing)}")
+                f"DW secret is missing required values: {', '.join(missing)}")
 
         self.conn = None
         logger.info(

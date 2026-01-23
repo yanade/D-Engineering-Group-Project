@@ -14,9 +14,7 @@ class S3LoadingClient:
     def __init__(self, bucket: str):
         self.bucket_name = bucket
         self.s3 = boto3.client("s3")
-        logger.info(
-            "Initialising S3LoadingClient. bucket=%s",
-            self.bucket_name)
+        logger.info("Initialising S3LoadingClient. bucket=%s", self.bucket_name)
 
     def list_parquet_keys(self, table_name: str) -> List[str]:
 
