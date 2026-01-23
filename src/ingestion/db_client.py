@@ -1,4 +1,4 @@
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from pg8000.native import Connection
 from datetime import datetime
 import os
@@ -8,7 +8,14 @@ import json
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-load_dotenv()
+
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    load_dotenv = None
+
+if load_dotenv is not None:
+    load_dotenv()
 
 
 class DatabaseClient:
@@ -78,8 +85,7 @@ class DatabaseClient:
             column_names = [col["name"] for col in self.conn.columns]
             result = [dict(zip(column_names, row)) for row in rows]
             logger.info(
-                f"SQL executed successfully. Returned {
-                    len(result)} rows.")
+                f"SQL executed successfully. Returned {len(result)} rows.")
             return result
         except Exception as e:
             logger.exception(f"Error executing SQL: {sql}, {e}")
@@ -223,8 +229,7 @@ class DatabaseClient:
         try:
             rows = self.run(sql, {"since": since})
             logger.info(
-                f"Fetched {
-                    len(rows)} incremental rows from '{table_name}'")
+                f"Fetched {len(rows)} incremental rows from '{table_name}'")
             return rows
 
         except Exception as e:

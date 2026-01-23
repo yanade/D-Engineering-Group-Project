@@ -71,8 +71,7 @@ class IngestionService:
             changes = self.db.fetch_changes(table_name, since=last_checkpoint)
 
             logger.info(
-                f"Fetched {
-                    len(changes)} changed rows from table '{table_name}' since '{last_checkpoint}'")
+                f"Fetched {len(changes)} changed rows from table '{table_name}' since '{last_checkpoint}'")
             if not changes:
                 logger.info(
                     f"No new changes found for table '{table_name}'. Skipping S3 upload.")

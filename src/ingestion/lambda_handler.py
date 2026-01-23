@@ -4,6 +4,7 @@ import os
 from ingestion.ingest_service import IngestionService
 
 
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 

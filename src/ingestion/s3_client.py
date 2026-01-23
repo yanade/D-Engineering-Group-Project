@@ -23,9 +23,7 @@ class S3Client:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
         key = f"{table_name}/raw_{timestamp}.json"
         logger.info(
-            f"Uploading JSON to S3 → bucket={
-                self.bucket}, key={key}, rows={
-                len(data)}")
+            f"Uploading JSON to S3 → bucket={self.bucket}, key={key}, rows={len(data)}")
 
         try:
             self.s3.put_object(
@@ -40,8 +38,7 @@ class S3Client:
 
         except Exception as e:
             logger.exception(
-                f"Failed to upload JSON to S3 (bucket={
-                    self.bucket}, key={key}, {e})")
+                f"Failed to upload JSON to S3 (bucket={self.bucket}, key={key}, {e})")
             raise
 
     def get_checkpoint(self, table_name: str):
@@ -79,8 +76,7 @@ class S3Client:
             "last_ingested": timestamp.astimezone(timezone.utc).isoformat(),
         }
         logger.info(
-            f"Saving checkpoint for table '{table_name}': {
-                data['last_ingested']}")
+            f"Saving checkpoint for table '{table_name}': {data['last_ingested']}")
 
         try:
             self.s3.put_object(
@@ -90,8 +86,7 @@ class S3Client:
                 ContentType="application/json",
             )
             logger.info(
-                f"Wrote checkpoint for table '{table_name}': {
-                    data['last_ingested']}")
+                f"Wrote checkpoint for table '{table_name}': {data['last_ingested']}")
         except Exception as e:
             logger.exception(
                 f"Failed to write checkpoint for table '{table_name}', {e}")

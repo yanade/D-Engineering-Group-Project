@@ -28,10 +28,13 @@ python -m pip install \
 echo "Cleaning up unnecessary files..."
 
 # Remove cache and other unnecessary files
+echo "Cleaning up unnecessary files..."
+
 find "${ROOT_DIR}/lambda_layer" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 find "${ROOT_DIR}/lambda_layer" -type f -name "*.pyc" -delete
 find "${ROOT_DIR}/lambda_layer" -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
-find "${ROOT_DIR}/lambda_layer" -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
+
+
 
 echo "Creating ZIP file..."
 
