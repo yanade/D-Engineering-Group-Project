@@ -359,8 +359,7 @@ class TransformService:
 
             output_name = OUTPUT_NAME.get(method_name, method_name)
             logger.info(
-                f"Writing '{output_name}' from '{method_name}' ({
-                    len(df)} rows)")
+                f"Writing '{output_name}' from '{method_name}' ({len(df)} rows)")
             s3_key = self.processed_s3.write_parquet(output_name, df)
 
             results.append({
