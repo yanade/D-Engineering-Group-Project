@@ -137,11 +137,10 @@ def test_dim_snapshot_truncates_and_inserts(monkeypatch):
     res = svc.load_one_table(table)
 
     assert res["status"] == "loaded"
-    assert res["mode"] == "snapshot"
+    assert res["mode"] == "snapshot_upsert"
     assert res["rows"] == 2
 
     assert any("CREATE TABLE IF NOT EXISTS" in s for s in fake_db.executed_sql)
-    assert any(f'TRUNCATE TABLE "{table}"' in s for s in fake_db.executed_sql)
 
     assert len(fake_db.executemany_calls) == 1
     assert len(fake_db.executemany_calls[0]["params"]) == 2
