@@ -7,6 +7,8 @@
 resource "aws_lambda_layer_version" "dependencies" {
   layer_name          = "${var.project_name}-dependencies"
   filename            = "${path.module}/../dist/dependencies_layer.zip"
+  source_code_hash    = filebase64sha256("${path.module}/../dist/dependencies_layer.zip")
   compatible_runtimes = ["python3.11"]
   description         = "Python dependencies for ingestion lambda"
 }
+

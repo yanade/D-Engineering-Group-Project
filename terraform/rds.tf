@@ -11,9 +11,10 @@
 
 # security group for lambda functions
 resource "aws_security_group" "lambda_sg" {
-  name        = "${var.project_name}-lambda-sg"
-  description = "Security group for lambda functions in VPC"
-  vpc_id      = aws_vpc.etl_vpc.id
+  name                    = "${var.project_name}-lambda-sg"
+  description             = "Security group for lambda functions in VPC"
+  vpc_id                  = aws_vpc.etl_vpc.id
+  revoke_rules_on_delete  = true
 
   #     ingress {
   #     description = "Allow HTTPS (443) between Lambdas and Interface VPC Endpoints using the same SG"
@@ -75,6 +76,15 @@ resource "aws_security_group" "rds_sg" {
     protocol        = "tcp"
     security_groups = [aws_security_group.lambda_sg.id]
   }
+  # Allow PostgresSQL traffic from Bastion SG
+  ingress {
+    description     = "Postgres from Bastion SG"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion_sg.id]
+  }
+
   # Allow all outbound traffic from RDS (for updates etc..)
   egress {
     from_port   = 0

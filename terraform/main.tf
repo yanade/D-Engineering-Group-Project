@@ -13,7 +13,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket  = "gamboge-state-bucket"
+    bucket  = "gamboge-project-buket-y"
     key     = "terraform/week1-ingestion.tfstate"
     region  = "eu-west-2"
     encrypt = true

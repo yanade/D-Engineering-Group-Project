@@ -96,3 +96,11 @@ output "vpc_endpoint_s3_id" {
   description = "ID of S3 VPC endpoint"
   value       = aws_vpc_endpoint.s3.id
 }
+
+output "bastion_public_ip" {
+  value = aws_instance.bastion.public_ip
+}
+
+output "bastion_public_dns" {
+  value = aws_instance.bastion.public_dns
+}

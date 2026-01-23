@@ -41,8 +41,9 @@ data "aws_secretsmanager_secret" "totesys_creds" {
 # }
 
 resource "aws_secretsmanager_secret" "dw_creds" {
-  name        = "${var.project_name}/dw/${var.environment}"
-  description = "Data warehouse RDS credentials"
+  name                    = "${var.project_name}/dw/${var.environment}"
+  description             = "Data warehouse RDS credentials"
+  recovery_window_in_days = 0
   tags = {
     Stage       = "Week3-Loading"
     Environment = var.environment
@@ -67,5 +68,5 @@ resource "aws_secretsmanager_secret_version" "dw_creds_v1" {
 
 resource "random_password" "dw_password" {
   length  = 20
-  special = true
+  special = false
 }
