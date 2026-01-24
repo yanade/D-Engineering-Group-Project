@@ -49,7 +49,7 @@ jobs:
 
 
         - name: Lint with flake8
-          run: flake8 src/ --max-line-length=140
+          run: flake8 src/
 
         - name: Security - bandit
           run: |
