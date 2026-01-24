@@ -11,10 +11,10 @@
 
 # security group for lambda functions
 resource "aws_security_group" "lambda_sg" {
-  name                    = "${var.project_name}-lambda-sg"
-  description             = "Security group for lambda functions in VPC"
-  vpc_id                  = aws_vpc.etl_vpc.id
-  revoke_rules_on_delete  = true
+  name                   = "${var.project_name}-lambda-sg"
+  description            = "Security group for lambda functions in VPC"
+  vpc_id                 = aws_vpc.etl_vpc.id
+  revoke_rules_on_delete = true
 
   #     ingress {
   #     description = "Allow HTTPS (443) between Lambdas and Interface VPC Endpoints using the same SG"
