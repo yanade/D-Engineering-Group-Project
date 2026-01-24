@@ -112,7 +112,7 @@ class WarehouseDBClient(AbstractContextManager):
     def execute(self, sql: str,
                 params: Optional[Sequence[Any]] = None) -> None:
         # Execute a single statement.
-        # Uses positional params (%s placeholders in SQL).
+        # Uses positional params (%s placeholders in SQL)
         self._require_connection()
         logger.debug("Executing SQL: %s", sql)
         cur = self.conn.cursor()
@@ -141,15 +141,13 @@ class WarehouseDBClient(AbstractContextManager):
             return
 
         logger.info(
-            "Executing SQL many times: %s with %s param sets",
-            sql,
-            len(param_seq))
+            "Executing SQL many times: %s with %s param sets", sql, len(param_seq))
 
         cur = self.conn.cursor()
         try:
             for i in range(0, len(param_seq), chunk_size):
                 chunk = param_seq[i:i + chunk_size]
-                logger.info("  Executing chunk %s - %s", i, i + len(chunk) - 1)
+                logger.info("Executing chunk %s - %s", i, i + len(chunk) - 1)
                 cur.executemany(sql, chunk)
         finally:
             cur.close()
