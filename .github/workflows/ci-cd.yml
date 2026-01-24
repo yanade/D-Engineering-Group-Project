@@ -80,6 +80,11 @@ jobs:
           working-directory: terraform
           run: terraform fmt -check -recursive
 
+        - name: Terraform Init (no backend)
+          working-directory: terraform
+          run: terraform init -backend=false
+
+
         - name: Terraform Validate
           working-directory: terraform
           run: terraform validate
