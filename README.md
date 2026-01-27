@@ -1,16 +1,11 @@
-# 📊 Gamboge ETL Pipeline
+# 📊 Data Engineering Group Project Gamboge ETL Pipeline
 
-## Overview
 
-This project implements an **end-to-end ETL (Extract, Transform, Load) data pipeline** using Python, AWS, and Terraform.
+## 📌 Project Overview
 
-The pipeline:
-- Extracts data from a source PostgreSQL database
-- Stores raw data in Amazon S3
-- Transforms the data into analytics-ready tables
-- Loads the results into an AWS RDS PostgreSQL data warehouse
+This project implements an end-to-end, event-driven data engineering pipeline on AWS. It ingests data from a transactional PostgreSQL database, transforms it into an analytics-ready star schema, and loads it into a data warehouse designed for BI and reporting use cases.
 
-The solution is **serverless**, **event-driven**, and designed using **industry-standard data engineering practices**.
+The project was built as a **group project** during the *Northcoders Data Engineering Bootcamp* and focuses on production-style patterns such as incremental ingestion, event-driven processing, infrastructure as code, and data quality considerations.
 
 ---
 
@@ -18,95 +13,96 @@ The solution is **serverless**, **event-driven**, and designed using **industry-
 
 ### Pipeline Stages
 
-**Week 1 – Ingestion**
-- Extract data from source PostgreSQL (Totesys)
-- Incremental ingestion using timestamps
-- Store raw JSON files in S3 (Landing Zone)
-- Triggered on a schedule using EventBridge
+#### Ingestion
 
-**Week 2 – Transformation**
-- Read raw data from S3
-- Transform data into dimension and fact tables (star schema)
-- Write Parquet files to S3 (Processed Zone)
-- Triggered automatically by S3 events
+* Extract data from a source PostgreSQL database (Totesys)
+* Perform incremental ingestion using timestamp-based logic
+* Store raw data as JSON files in Amazon S3 (Landing Zone)
+* Triggered on a schedule using Amazon EventBridge
 
-**Week 3 – Loading**
-- Load transformed Parquet files into RDS PostgreSQL
-- Dimensions are upserted
-- Fact tables are appended
-- Warehouse ready for analytics and BI tools
+#### Transformation
+
+* Read raw JSON data from the S3 Landing Zone
+* Transform data into dimension and fact tables (star schema)
+* Write transformed data as Parquet files to Amazon S3 (Processed Zone)
+* Automatically triggered by S3 object creation events
+
+#### Loading
+
+* Load transformed Parquet files into Amazon RDS (PostgreSQL)
+* Dimension tables are upserted
+* Fact tables are appended
+* Data warehouse is ready for analytics and BI tools
 
 ---
 
 ## ☁️ AWS Services Used
 
-- AWS Lambda
-- Amazon S3
-- Amazon RDS (PostgreSQL)
-- AWS Secrets Manager
-- Amazon EventBridge
-- Amazon CloudWatch
-- Amazon VPC
-- Terraform
+* AWS Lambda
+* Amazon S3
+* Amazon RDS (PostgreSQL)
+* AWS Secrets Manager
+* Amazon EventBridge
+* Amazon CloudWatch
+* Amazon VPC
+* Terraform
 
 ---
 
 ## 🧰 Technologies & Versions
 
-| Technology | Version |
-|-----------|--------|
-| Python | 3.11 |
-| Terraform | >= 1.0 |
-| PostgreSQL | 14 |
-| pg8000 | 1.31.5 |
-| pandas | AWS Lambda Layer |
-| pyarrow | AWS Lambda Layer |
+| Technology | Version / Notes  |
+| ---------- | ---------------- |
+| Python     | 3.11             |
+| Terraform  | >= 1.0           |
+| PostgreSQL | 14               |
+| pg8000     | 1.31.5           |
+| pandas     | AWS Lambda Layer |
+| pyarrow    | AWS Lambda Layer |
 
 ---
 
 ## 📁 Project Structure
 
+```
 .
 ├── src/
-│ ├── ingestion/
-│ ├── transformation/
-│ ├── loading/
-|
+│   ├── ingestion/
+│   ├── transformation/
+│   └── loading/
+│
 ├── lambda_layer/
-│ ├── python/
-│ ├── lambda_layer.zip
-│ 
-|
+│   ├── python/
+│   └── lambda_layer.zip
+│
 ├── test/
-│ ├── ingestion/
-│ ├── transformation/
-| |── loading/
+│   ├── ingestion/
+│   ├── transformation/
+│   └── loading/
 │
 ├── terraform/
-│ ├── main.tf
-│ ├── variables.tf
-│ ├── vpc.tf
-│ ├── s3.tf
-│ ├── rds.tf
-│ ├── iam.tf
-│ ├── lambda_ingestion.tf
-│ ├── lambda_transform.tf
-│ ├── lambda_loading.tf
-│ ├── cloudwatch.tf
-│ ├── eventbridge.tf
-│ ├── lambda_layer.tf
-│ ├── outputs.tf
-│ ├── terraform.tfvars
-│ ├── secrets.tf
-│ ├── s3_triggers.tf
-│ 
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── vpc.tf
+│   ├── s3.tf
+│   ├── rds.tf
+│   ├── iam.tf
+│   ├── lambda_ingestion.tf
+│   ├── lambda_transform.tf
+│   ├── lambda_loading.tf
+│   ├── cloudwatch.tf
+│   ├── eventbridge.tf
+│   ├── lambda_layer.tf
+│   ├── outputs.tf
+│   ├── terraform.tfvars
+│   ├── secrets.tf
+│   └── s3_triggers.tf
 │
 ├── requirements.txt
 ├── pytest.ini
 ├── pyproject.toml
 └── README.md
-
-
+```
 
 ---
 
@@ -117,101 +113,125 @@ The solution is **serverless**, **event-driven**, and designed using **industry-
 ```bash
 git clone <REPO_URL>
 cd Data-Engineering-Group-Proj
-
+```
 
 ### 2️⃣ Create and activate a virtual environment
 
+```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
+```
 
 ### 3️⃣ Install Python dependencies (for local development & testing)
 
+```bash
 pip install --upgrade pip
 pip install -r requirements.txt
+```
 
 ### 4️⃣ Export required Terraform secrets
 
+```bash
 export TF_VAR_totesys_db_password="your_source_db_password"
 export TF_VAR_dw_db_password="your_warehouse_db_password"
-
+```
 
 ### 5️⃣ Initialise Terraform
 
+```bash
 cd terraform
 terraform init
+```
 
 ### 6️⃣ Review infrastructure changes
 
+```bash
 terraform plan
-
+```
 
 ### 7️⃣ Deploy infrastructure
 
+```bash
 terraform apply
+```
 
 ### 🧹 Teardown
 
+```bash
 terraform destroy
+```
 
-
-
+---
 
 ## ▶️ Running the Pipeline
 
-Ingestion
+### Ingestion
 
-- Runs automatically every 15 minutes
+* Runs automatically every 15 minutes
+* Can be manually triggered via the AWS Lambda console
 
-- Can be manually triggered via AWS Lambda console
+### Transformation
 
-Transformation
+* Automatically triggered when new JSON files arrive in the S3 Landing Zone
 
-- Automatically triggered when new JSON files arrive in the landing S3 bucket
+### Loading
 
-Loading
+* Automatically triggered when new Parquet files arrive in the S3 Processed Zone
 
-- Automatically triggered when new Parquet files arrive in the processed S3 bucket
-
+---
 
 ## 🧪 Running Tests
 
 ### From the project root:
 
+```bash
 pytest
+```
 
 ### Run specific test folders:
 
+```bash
 pytest test/ingestion
 pytest test/transformation
+pytest test/loading
+```
 
-
+---
 
 ## 🧹 Code Quality & Security Checks
 
+```bash
 black src test
 flake8 src
 bandit -r src
 pip-audit
+```
 
+---
 
 ## 🧠 Design Decisions
 
-- Infrastructure defined using Terraform for repeatability
+* Infrastructure defined using Terraform to ensure repeatability and consistency
+* Event-driven architecture implemented using S3 triggers
+* AWS Secrets Manager used instead of hardcoded credentials
+* Star schema chosen to support analytics-ready data modelling
+* pg8000 used for Lambda-safe PostgreSQL connections
+* AWS-managed Lambda Layers used to reduce deployment package size
 
-- Event-driven architecture using S3 triggers
+---
 
-- Secrets Manager used instead of hardcoded credentials
+## ⚠️ Assumptions & Limitations
 
-- Star schema for analytics-ready warehouse
+* The pipeline assumes reliable timestamp fields in source tables for incremental ingestion
+* Error handling focuses on logging and observability rather than automatic retries
+* The project is designed for learning and demonstration purposes rather than high-throughput production workloads
 
-- pg8000 used for Lambda-safe PostgreSQL connections
+---
 
-- AWS-managed Lambda Layers used to reduce deployment size
+## 📚 What I Learned
 
-
-
-
-
-
-
-
+* Designing and implementing event-driven data pipelines on AWS
+* Applying infrastructure-as-code principles using Terraform
+* Modelling analytical data using a star schema
+* Managing secrets and credentials securely in cloud environments
+* Balancing technical correctness with business-oriented data design
