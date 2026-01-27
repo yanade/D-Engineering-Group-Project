@@ -31,7 +31,7 @@ The project was built as a **group project** during the *Northcoders Data Engine
 
 * Load transformed Parquet files into Amazon RDS (PostgreSQL)
 * Dimension tables are upserted
-* Fact tables are appended
+* Fact tables are loaded incrementally using the watermark to avoid reprocessing
 * Data warehouse is ready for analytics and BI tools
 
 ---
@@ -211,12 +211,12 @@ pip-audit
 
 ## 🧠 Design Decisions
 
-* Infrastructure defined using Terraform to ensure repeatability and consistency
-* Event-driven architecture implemented using S3 triggers
+* nfrastructure defined using Terraform to ensure repeatability and consistency
+* Event-driven architecture using S3 triggers and EventBridge
+* Incremental ingestion and loading using watermark-based logic
 * AWS Secrets Manager used instead of hardcoded credentials
 * Star schema chosen to support analytics-ready data modelling
-* pg8000 used for Lambda-safe PostgreSQL connections
-* AWS-managed Lambda Layers used to reduce deployment package size
+* Lambda Layers used to manage dependencies efficiently
 
 ---
 
@@ -227,11 +227,3 @@ pip-audit
 * The project is designed for learning and demonstration purposes rather than high-throughput production workloads
 
 ---
-
-## 📚 What I Learned
-
-* Designing and implementing event-driven data pipelines on AWS
-* Applying infrastructure-as-code principles using Terraform
-* Modelling analytical data using a star schema
-* Managing secrets and credentials securely in cloud environments
-* Balancing technical correctness with business-oriented data design
