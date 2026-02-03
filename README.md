@@ -220,6 +220,14 @@ pip-audit
 
 ---
 
+## Alternative approach:
+
+Fact tables could be loaded idempotently using PK-based upserts
+(ON CONFLICT DO NOTHING), however this project intentionally uses
+append-only loading with watermark filtering to preserve full
+historical changes as required by the specification.
+___
+
 ## ⚠️ Assumptions & Limitations
 
 * The pipeline assumes reliable timestamp fields in source tables for incremental ingestion
