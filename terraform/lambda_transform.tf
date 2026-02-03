@@ -20,7 +20,6 @@ resource "aws_lambda_function" "transform" {
   role          = aws_iam_role.transform_lambda_role.arn
   runtime       = var.lambda_runtime
 
-  # this handler in ../src/transformation/lambda_handler.py
   handler = "transformation.lambda_handler.lambda_handler"
 
   dead_letter_config {
