@@ -14,22 +14,25 @@ data "archive_file" "ingestion_lambda" {
 resource "aws_lambda_function" "ingestion" {
 
   function_name = "${var.project_name}-ingestion-${var.environment}"
-  role          = aws_iam_role.lambda_exec.arn
+  role          = aws_iam_role.ingestion_lambda_role.arn
   runtime       = var.lambda_runtime
   handler       = "ingestion.lambda_handler.lambda_handler"
+
+  dead_letter_config {
+    target_arn = aws_sqs_queue.ingestion_dlq.arn
+  }
+  layers = [aws_lambda_layer_version.dependencies.arn]
 
   filename         = data.archive_file.ingestion_lambda.output_path
   source_code_hash = data.archive_file.ingestion_lambda.output_base64sha256
 
 
 
-  layers = [aws_lambda_layer_version.dependencies.arn]
 
-
-  #  vpc_config {
-  #   subnet_ids         = [aws_subnet.private_a.id,aws_subnet.private_b.id]
-  #   security_group_ids = [aws_security_group.lambda_sg.id]
-  # }
+   vpc_config {
+    subnet_ids         = [aws_subnet.private_a.id,aws_subnet.private_b.id]
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory_size
 

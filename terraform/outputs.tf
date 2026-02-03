@@ -34,10 +34,10 @@ output "secrets_manager_secret" {
   sensitive   = true
 }
 
-output "lambda_iam_role" {
-  description = "IAM role for Lambda functions"
-  value       = aws_iam_role.lambda_exec.arn
-}
+# output "lambda_iam_role" {
+#   description = "IAM role for Lambda functions"
+#   value       = aws_iam_role.lambda_exec.arn
+# }
 
 output "data_warehouse_endpoint" {
   description = "RDS endpoint for data warehouse"

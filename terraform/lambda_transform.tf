@@ -17,11 +17,15 @@ data "archive_file" "transform_lambda" {
 
 resource "aws_lambda_function" "transform" {
   function_name = "${var.project_name}-transform-${var.environment}"
-  role          = aws_iam_role.lambda_exec.arn
+  role          = aws_iam_role.transform_lambda_role.arn
   runtime       = var.lambda_runtime
 
   # this handler in ../src/transformation/lambda_handler.py
   handler = "transformation.lambda_handler.lambda_handler"
+
+  dead_letter_config {
+    target_arn = aws_sqs_queue.transform_dlq.arn
+  }
 
   filename         = data.archive_file.transform_lambda.output_path
   source_code_hash = data.archive_file.transform_lambda.output_base64sha256

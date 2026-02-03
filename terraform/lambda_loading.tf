@@ -14,11 +14,15 @@ data "archive_file" "loading_lambda" {
 
 resource "aws_lambda_function" "loading" {
   function_name = "${var.project_name}-loading-${var.environment}"
-  role          = aws_iam_role.lambda_exec.arn
+  role          = aws_iam_role.loading_lambda_role.arn
   runtime       = var.lambda_runtime
 
 
   handler = "loading.lambda_handler.lambda_handler"
+
+  dead_letter_config {
+    target_arn = aws_sqs_queue.loading_dlq.arn
+  } 
 
   filename         = data.archive_file.loading_lambda.output_path
   source_code_hash = data.archive_file.loading_lambda.output_base64sha256

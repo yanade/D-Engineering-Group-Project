@@ -86,3 +86,34 @@ resource "aws_s3_bucket_public_access_block" "processed_zone" {
   restrict_public_buckets = true
 }
 
+# Dead Letter Queues for Lambda functions
+
+resource "aws_sqs_queue" "ingestion_dlq" {
+  name                      = "${var.project_name}-ingestion-dlq-${var.environment}"
+  message_retention_seconds = 1209600  # 14 days
+  tags = {
+    Name    = "${var.project_name}-ingestion-dlq"
+    Stage   = "DLQ"
+    Project = var.project_name
+  }
+}
+
+resource "aws_sqs_queue" "transform_dlq" {
+  name                      = "${var.project_name}-transform-dlq-${var.environment}"
+  message_retention_seconds = 1209600  # 14 days
+  tags = {
+    Name    = "${var.project_name}-transform-dlq"
+    Stage   = "DLQ"
+    Project = var.project_name
+  }
+}
+
+resource "aws_sqs_queue" "loading_dlq" {
+  name                      = "${var.project_name}-loading-dlq-${var.environment}"
+  message_retention_seconds = 1209600  # 14 days
+  tags = {
+    Name    = "${var.project_name}-loading-dlq"
+    Stage   = "DLQ"
+    Project = var.project_name
+  }
+}
