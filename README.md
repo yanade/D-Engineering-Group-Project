@@ -211,7 +211,7 @@ pip-audit
 
 ## 🧠 Design Decisions
 
-* nfrastructure defined using Terraform to ensure repeatability and consistency
+* Ifrastructure defined using Terraform to ensure repeatability and consistency
 * Event-driven architecture using S3 triggers and EventBridge
 * Incremental ingestion and loading using watermark-based logic
 * AWS Secrets Manager used instead of hardcoded credentials
